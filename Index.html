@@ -188,32 +188,76 @@ function bootstrap(){
   const t = localStorage.getItem("q_token");
   if(t) SESSION.token = t;
 
-  google.script.run.withSuccessHandler(r=>{
-    if(!r || !r.ok){
-      document.getElementById("regMsg").innerHTML = `<span class="bad">No pude cargar la jornada.</span>`;
-      return;
-    }
+  google.script.run
+    .withSuccessHandler(r=>{
+      if(!r || !r.ok){
+        console.error("api_bootstrap failed:", r);
+        document.getElementById("regMsg").innerHTML = `<span class="bad">No pude cargar la jornada.</span>`;
+        return;
+      }
 
-    SESSION.jornada = r.jornada;
-    SESSION.lockMinutes = r.lockMinutes || 10;
-    SESSION.partidos = r.partidos || [];
+      console.log("Bootstrap data:", r);
+      SESSION.jornada = r.jornada;
+      SESSION.lockMinutes = r.lockMinutes || 10;
+      SESSION.partidos = r.partidos || [];
 
-    // si no hay token, que se registre
-    if(!SESSION.token){
-      document.getElementById("registerCard").style.display = "block";
-      document.getElementById("formCard").style.display = "none";
-      return;
-    }
+      console.log("Partidos loaded:", SESSION.partidos.length);
 
-    document.getElementById("registerCard").style.display = "none";
-    document.getElementById("formCard").style.display = "block";
-    document.getElementById("jorTitle").innerHTML = `Jornada ${r.jornada}`;
+      // si no hay token, que se registre
+      if(!SESSION.token){
+        document.getElementById("registerCard").style.display = "block";
+        document.getElementById("formCard").style.display = "none";
+        return;
+      }
 
-    renderForm();
-  }).api_bootstrap();
+      document.getElementById("registerCard").style.display = "none";
+      document.getElementById("formCard").style.display = "block";
+      document.getElementById("jorTitle").innerHTML = `Jornada ${r.jornada}`;
+
+      renderForm();
+      loadMyPicks();
+    })
+    .withFailureHandler(err=>{
+      console.error("api_bootstrap error:", err);
+      document.getElementById("regMsg").innerHTML = `<span class="bad">Error al cargar: ${esc(err?.message || "intenta recargar la página")}</span>`;
+    })
+    .api_bootstrap();
 }
 
 /* ---------- FORMULARIO ---------- */
+function loadMyPicks(){
+  if(!SESSION.token || !SESSION.jornada) return;
+
+  // Load picks for both entries
+  google.script.run.withSuccessHandler(r1=>{
+    if(r1 && r1.ok && r1.picks){
+      fillPicksInForm(r1.picks, 1);
+    }
+  }).api_getMyPicks(SESSION.token, SESSION.jornada, 1);
+
+  google.script.run.withSuccessHandler(r2=>{
+    if(r2 && r2.ok && r2.picks){
+      fillPicksInForm(r2.picks, 2);
+    }
+  }).api_getMyPicks(SESSION.token, SESSION.jornada, 2);
+}
+
+function fillPicksInForm(picks, entry){
+  SESSION.partidos.forEach((p, idx)=>{
+    const key = `${SESSION.jornada}|${p.local}`.toLowerCase() + `|${p.visit}`.toLowerCase();
+    const saved = picks[key];
+    if(!saved) return;
+
+    const pickEl = document.getElementById(`pick_${idx}_${entry}`);
+    const marcEl = document.getElementById(`marc_${idx}_${entry}`);
+
+    if(pickEl && saved.pick) pickEl.value = saved.pick;
+    if(marcEl && (saved.gl || saved.gv)){
+      marcEl.value = `${saved.gl}-${saved.gv}`;
+    }
+  });
+}
+
 function renderForm(){
   const box = document.getElementById("picksBox");
   if(!SESSION.partidos.length){
