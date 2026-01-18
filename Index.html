@@ -164,14 +164,19 @@ function register(){
     localStorage.setItem("q_token", r.token);
     
     // Validate token and show predictions form
-    google.script.run.withSuccessHandler(loginR=>{
-      if(!loginR || !loginR.ok){
-        document.getElementById("regMsg").innerHTML = `<span class="bad">Error al validar: ${esc(loginR?.error || "desconocido")}</span>`;
-        return;
-      }
-      document.getElementById("regMsg").innerHTML = `<span class="ok">✅ Registro exitoso. Cargando predicciones...</span>`;
-      bootstrap();
-    }).api_loginByToken(r.token);
+    google.script.run
+      .withSuccessHandler(loginR=>{
+        if(!loginR || !loginR.ok){
+          document.getElementById("regMsg").innerHTML = `<span class="bad">Error al validar: ${esc(loginR?.error || "desconocido")}</span>`;
+          return;
+        }
+        document.getElementById("regMsg").innerHTML = `<span class="ok">✅ Registro exitoso. Cargando predicciones...</span>`;
+        bootstrap();
+      })
+      .withFailureHandler(err=>{
+        document.getElementById("regMsg").innerHTML = `<span class="bad">Error de conexión: ${esc(err?.message || "intenta de nuevo")}</span>`;
+      })
+      .api_loginByToken(r.token);
   }).api_register(nombre);
 }
 
