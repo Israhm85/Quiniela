@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Quiniela Liga MX</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    :root{
+      --bg:#0f1220;
+      --card:#171a2f;
+      --line:#2a2e52;
+      --accent:#7c9cff;
+      --ok:#35d49a;
+      --bad:#ff6b6b;
+      --txt:#e9ecff;
+    }
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:linear-gradient(180deg,#0c0f1d,#12152b);
+      color:var(--txt);
+    }
+    .wrap{max-width:980px;margin:0 auto;padding:16px}
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      margin-bottom:14px;
+    }
+    h1,h2,h3{margin:.2em 0 .6em 0}
+    .small{opacity:.85;font-size:13px}
+    input,select,button{
+      width:100%;
+      padding:12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#0c0f1d;
+      color:var(--txt);
+      font-size:16px;
+    }
+    button{
+      background:linear-gradient(180deg,#6f8cff,#5a74ff);
+      border:none;
+      font-weight:800;
+      cursor:pointer;
+    }
+    button.secondary{
+      background:#0c0f1d;
+      border:1px solid var(--line);
+      font-weight:700;
+    }
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    th,td{padding:8px;border-bottom:1px solid var(--line)}
+    th{opacity:.8;text-align:left}
+    .center{text-align:center}
+    .ok{color:var(--ok)}
+    .bad{color:var(--bad)}
+
+    /* Partido header */
+    .matchHead{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px; margin-bottom:10px;
+    }
+    .team{
+      display:flex; align-items:center; gap:8px; min-width:0;
+    }
+    .team span{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px;}
+    .logo{
+      width:26px; height:26px; border-radius:50%;
+      background:#0c0f1d; border:1px solid var(--line);
+      object-fit:contain;
+    }
+    .vs{opacity:.8; font-weight:800}
+
+    /* ✅ Dos picks lado a lado */
+    .twoCols{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+    .miniCard{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px;
+      background:rgba(255,255,255,.03);
+    }
+    .miniTitle{font-weight:900;margin-bottom:8px}
+    .locked{
+      opacity:.6;
+      filter:grayscale(1);
+    }
+    @media(max-width:700px){
+      .twoCols{grid-template-columns:1fr;}
+      .team span{max-width:140px;}
+    }
+  </style>
+</head>
+
+<body>
+<div class="wrap">
+
+  <h1>⚽ Quiniela Liga MX</h1>
+
+  <!-- REGISTRO -->
+  <div class="card" id="registerCard">
+    <h2>Regístrate</h2>
+    <div class="small">Tu nombre debe ser único (no se permiten repetidos)</div>
+    <input id="regNombre" placeholder="Tu nombre">
+    <div style="margin-top:10px">
+      <button onclick="register()">Entrar</button>
+    </div>
+    <div id="regMsg" class="small" style="margin-top:8px"></div>
+  </div>
+
+  <!-- FORMULARIO -->
+  <div class="card" id="formCard" style="display:none">
+    <h2 id="jorTitle"></h2>
+    <div class="small">Tienes <strong>2 pronósticos</strong>. Cada uno compite por separado.</div>
+
+    <div id="picksBox" style="margin-top:10px"></div>
+
+    <button style="margin-top:12px" onclick="submitAll()">Guardar pronósticos</button>
+    <div id="saveMsg" class="small" style="margin-top:8px"></div>
+
+    <div style="margin-top:14px">
+      <button class="secondary" onclick="openTabla()">📊 Ver tabla / transparencia</button>
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <div class="card" id="tablaCard" style="display:none">
+    <h2>📊 Resultados</h2>
+    <div id="premioMayorBox"></div>
+    <div id="premioMenorBox"></div>
+
+    <button class="secondary" style="margin-bottom:10px" onclick="loadTabla()">Ver tabla general</button>
+    <button class="secondary" style="margin-bottom:10px" onclick="loadTransparencia()">👀 Ver todos los picks</button>
+
+    <div id="tablaBox"></div>
+  </div>
+
+</div>
+
+<script>
+let SESSION = { token:null, jornada:null, lockMinutes:10, partidos:[] };
+
+function esc(s){return String(s||"").replace(/[&<>"]/g,m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[m]))}
+
+/* ---------- REGISTRO ---------- */
+function register(){
+  const nombre = document.getElementById("regNombre").value.trim();
+  if(!nombre) return;
+
+  document.getElementById("regMsg").innerHTML = "Registrando…";
+
+  google.script.run.withSuccessHandler(r=>{
+    if(!r.ok){
+      document.getElementById("regMsg").innerHTML = `<span class="bad">${esc(r.error)}</span>`;
+      return;
+    }
+    SESSION.token = r.token;
+    localStorage.setItem("q_token", r.token);
+    bootstrap();
+  }).api_register(nombre);
+}
+
+/* ---------- BOOTSTRAP ---------- */
+function bootstrap(){
+  const t = localStorage.getItem("q_token");
+  if(t) SESSION.token = t;
+
+  google.script.run.withSuccessHandler(r=>{
+    if(!r || !r.ok){
+      document.getElementById("regMsg").innerHTML = `<span class="bad">No pude cargar la jornada.</span>`;
+      return;
+    }
+
+    SESSION.jornada = r.jornada;
+    SESSION.lockMinutes = r.lockMinutes || 10;
+    SESSION.partidos = r.partidos || [];
+
+    // si no hay token, que se registre
+    if(!SESSION.token){
+      document.getElementById("registerCard").style.display = "block";
+      document.getElementById("formCard").style.display = "none";
+      return;
+    }
+
+    document.getElementById("registerCard").style.display = "none";
+    document.getElementById("formCard").style.display = "block";
+    document.getElementById("jorTitle").innerHTML = `Jornada ${r.jornada}`;
+
+    renderForm();
+  }).api_bootstrap();
+}
+
+/* ---------- FORMULARIO ---------- */
+function renderForm(){
+  const box = document.getElementById("picksBox");
+  if(!SESSION.partidos.length){
+    box.innerHTML = `<div class="small bad">No hay partidos cargados para esta jornada.</div>`;
+    return;
+  }
+
+  let html = "";
+
+  SESSION.partidos.forEach((p, idx)=>{
+    const locked = !!p.locked;
+    const lockBadge = locked
+      ? `<div class="small bad">🔒 Bloqueado (${esc(p.reason||"")})</div>`
+      : `<div class="small ok">✅ Abierto</div>`;
+
+    html += `
+      <div class="card ${locked ? "locked":""}">
+        <div class="matchHead">
+          <div class="team">
+            ${p.logoLocal ? `<img class="logo" src="${esc(p.logoLocal)}" alt="">` : ``}
+            <span><strong>${esc(p.local)}</strong></span>
+          </div>
+          <div class="vs">vs</div>
+          <div class="team" style="justify-content:flex-end">
+            <span><strong>${esc(p.visit)}</strong></span>
+            ${p.logoVisit ? `<img class="logo" src="${esc(p.logoVisit)}" alt="">` : ``}
+          </div>
+        </div>
+
+        <div class="small">${esc(p.fechaTxt||"")}</div>
+        ${lockBadge}
+
+        <div class="twoCols" style="margin-top:10px">
+          <div class="miniCard">
+            <div class="miniTitle">Pronóstico 1</div>
+            <select id="pick_${idx}_1" ${locked ? "disabled":""}>
+              <option value="">Pick</option>
+              <option value="L">Local</option>
+              <option value="E">Empate</option>
+              <option value="V">Visitante</option>
+            </select>
+            <input id="marc_${idx}_1" ${locked ? "disabled":""} placeholder="Marcador (ej. 2-1)" style="margin-top:8px">
+          </div>
+
+          <div class="miniCard">
+            <div class="miniTitle">Pronóstico 2</div>
+            <select id="pick_${idx}_2" ${locked ? "disabled":""}>
+              <option value="">Pick</option>
+              <option value="L">Local</option>
+              <option value="E">Empate</option>
+              <option value="V">Visitante</option>
+            </select>
+            <input id="marc_${idx}_2" ${locked ? "disabled":""} placeholder="Marcador (ej. 2-1)" style="margin-top:8px">
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  box.innerHTML = html;
+}
+
+/* ---------- SUBMIT (arreglado) ---------- */
+function submitAll(){
+  const saveMsg = document.getElementById("saveMsg");
+  saveMsg.innerHTML = "Guardando…";
+
+  const picks1 = [];
+  const picks2 = [];
+
+  SESSION.partidos.forEach((p, idx)=>{
+    // entry 1
+    let pick = (document.getElementById(`pick_${idx}_1`)?.value || "").trim();
+    let marc = (document.getElementById(`marc_${idx}_1`)?.value || "").trim();
+    let gl="", gv="";
+    if(marc.includes("-")){
+      const parts = marc.split("-");
+      gl = (parts[0]||"").trim();
+      gv = (parts[1]||"").trim();
+    }
+    picks1.push({ local:p.local, visit:p.visit, pick, gl, gv });
+
+    // entry 2
+    pick = (document.getElementById(`pick_${idx}_2`)?.value || "").trim();
+    marc = (document.getElementById(`marc_${idx}_2`)?.value || "").trim();
+    gl=""; gv="";
+    if(marc.includes("-")){
+      const parts = marc.split("-");
+      gl = (parts[0]||"").trim();
+      gv = (parts[1]||"").trim();
+    }
+    picks2.push({ local:p.local, visit:p.visit, pick, gl, gv });
+  });
+
+  // guardar entry 1
+  google.script.run.withSuccessHandler(r1=>{
+    if(!r1 || !r1.ok){
+      saveMsg.innerHTML = `<span class="bad">⛔ Entry 1: ${esc(r1?.error || "error")}</span>`;
+      return;
+    }
+
+    // guardar entry 2
+    google.script.run.withSuccessHandler(r2=>{
+      if(!r2 || !r2.ok){
+        saveMsg.innerHTML = `<span class="bad">⛔ Entry 2: ${esc(r2?.error || "error")}</span>`;
+        return;
+      }
+
+      saveMsg.innerHTML =
+        `<span class="ok">✅ Guardado: Entry 1 (${r1.created+r1.updated}) · Entry 2 (${r2.created+r2.updated})</span>
+         <div class="small">Bloqueados por lock: ${ (r1.blocked||0) + (r2.blocked||0) }</div>`;
+
+    }).api_submit({ token:SESSION.token, jornada:SESSION.jornada, entry:2, picks:picks2 });
+
+  }).api_submit({ token:SESSION.token, jornada:SESSION.jornada, entry:1, picks:picks1 });
+}
+
+/* ---------- TABLA / TRANSPARENCIA ---------- */
+function openTabla(){
+  document.getElementById("tablaCard").style.display = "block";
+  loadPremioMenor();
+  loadTabla();
+}
+
+function loadPremioMenor(){
+  const box = document.getElementById("premioMenorBox");
+  box.innerHTML = "";
+
+  google.script.run.withSuccessHandler(r=>{
+    if(!r || !r.ok){
+      box.innerHTML = `<div class="small bad">🥈 Premio marcador exacto: ${esc(r?.error || "No disponible (cierra la jornada)")}</div>`;
+      return;
+    }
+    if(!r.winner){
+      box.innerHTML = `<div class="small">🥈 Premio marcador exacto: (sin datos)</div>`;
+      return;
+    }
+    box.innerHTML = `
+      <div class="card" style="background:rgba(255,255,255,.03)">
+        🥈 <strong>Premio marcador exacto</strong><br>
+        Ganador: <strong>${esc(r.winner.nombre)} (Entry ${esc(r.winner.entry)})</strong><br>
+        Exactos: <strong>${esc(r.winner.exactos)}</strong> · Aciertos: <strong>${esc(r.winner.aciertos)}</strong><br>
+        <div class="small" style="margin-top:6px">Desempate: exactos → aciertos → primero en enviar.</div>
+      </div>
+    `;
+  }).api_getPremioMarcadorExactoPorEntry(SESSION.jornada);
+}
+
+function loadTabla(){
+  const box = document.getElementById("tablaBox");
+  box.innerHTML = `<div class="small">Cargando tabla…</div>`;
+
+  google.script.run.withSuccessHandler(r=>{
+    if(!r || !r.ok){
+      box.innerHTML = `<div class="small bad">⛔ ${esc(r?.error || "No disponible")}</div>`;
+      return;
+    }
+
+    let html = `<table><thead><tr><th>#</th><th>Entry</th><th>Nombre</th><th class="center">Pts</th></tr></thead><tbody>`;
+    (r.rows||[]).forEach(x=>{
+      html += `<tr>
+        <td>${x.pos}</td>
+        <td class="center">${esc(x.entry)}</td>
+        <td>${esc(x.nombre)}</td>
+        <td class="center"><strong>${esc(x.puntos)}</strong></td>
+      </tr>`;
+    });
+    html += `</tbody></table>`;
+
+    box.innerHTML = html;
+  }).api_getTablaGeneral();
+}
+
+function loadTransparencia(){
+  const box = document.getElementById("tablaBox");
+  box.innerHTML = `<div class="small">Cargando transparencia…</div>`;
+
+  google.script.run.withSuccessHandler(r=>{
+    if(!r || !r.ok){
+      box.innerHTML = `<div class="small bad">⛔ ${esc(r?.error || "No disponible (cierra la jornada)")}</div>`;
+      return;
+    }
+
+    let html = `<div class="small" style="margin-bottom:10px">Transparencia — Jornada ${esc(r.jornada)}</div>`;
+
+    (r.rows||[]).forEach(u=>{
+      html += `
+        <div class="card" style="background:rgba(255,255,255,.03)">
+          <div style="font-weight:900;margin-bottom:8px">
+            ${esc(u.nombre)} — Entry ${esc(u.entry)}
+          </div>
+
+          <div style="overflow:auto">
+            <table>
+              <thead>
+                <tr>
+                  <th>Partido</th>
+                  <th class="center">Pick</th>
+                  <th class="center">Marcador</th>
+                  <th class="center">Real</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${(u.picks||[]).map(p=>`
+                  <tr>
+                    <td>${esc(p.local)} vs ${esc(p.visit)}</td>
+                    <td class="center"><strong>${esc(p.pick || "—")}</strong></td>
+                    <td class="center">${esc(p.pickMarc || "—")}</td>
+                    <td class="center">${esc(p.marcadorReal || "—")}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    });
+
+    box.innerHTML = html;
+  }).api_getTransparenciaPicks(SESSION.jornada);
+}
+
+/* ---------- AUTO ---------- */
+window.onload = bootstrap;
+</script>
+</body>
+</html>
