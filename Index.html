@@ -172,15 +172,20 @@ function register(){
 
   document.getElementById("regMsg").innerHTML = "Registrando…";
 
-  google.script.run.withSuccessHandler(r=>{
-    if(!r.ok){
-      document.getElementById("regMsg").innerHTML = `<span class="bad">${esc(r.error)}</span>`;
-      return;
-    }
-    SESSION.token = r.token;
-    localStorage.setItem("q_token", r.token);
-    validateTokenAndBootstrap(r.token);
-  }).api_register(nombre);
+  google.script.run
+    .withSuccessHandler(r=>{
+      if(!r.ok){
+        document.getElementById("regMsg").innerHTML = `<span class="bad">${esc(r.error)}</span>`;
+        return;
+      }
+      SESSION.token = r.token;
+      localStorage.setItem("q_token", r.token);
+      validateTokenAndBootstrap(r.token);
+    })
+    .withFailureHandler(err=>{
+      document.getElementById("regMsg").innerHTML = `<span class="bad">Error de conexión: ${esc(err?.message || "intenta de nuevo")}</span>`;
+    })
+    .api_register(nombre);
 }
 
 /* ---------- BOOTSTRAP ---------- */
