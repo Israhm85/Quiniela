@@ -162,7 +162,16 @@ function register(){
     }
     SESSION.token = r.token;
     localStorage.setItem("q_token", r.token);
-    bootstrap();
+    
+    // Validate token and show predictions form
+    google.script.run.withSuccessHandler(loginR=>{
+      if(!loginR || !loginR.ok){
+        document.getElementById("regMsg").innerHTML = `<span class="bad">Error al validar: ${esc(loginR?.error || "desconocido")}</span>`;
+        return;
+      }
+      document.getElementById("regMsg").innerHTML = `<span class="ok">✅ Registro exitoso. Cargando predicciones...</span>`;
+      bootstrap();
+    }).api_loginByToken(r.token);
   }).api_register(nombre);
 }
 
