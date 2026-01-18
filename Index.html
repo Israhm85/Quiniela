@@ -226,34 +226,28 @@ function bootstrap(){
 
 /* ---------- FORMULARIO ---------- */
 function generateMatchKey(jornada, local, visit){
-  return `${jornada}|${local}`.toLowerCase() + `|${visit}`.toLowerCase();
+  return `${jornada}|${local}|${visit}`.toLowerCase();
 }
 
 function loadMyPicks(){
   if(!SESSION.token || !SESSION.jornada) return;
 
   // Load picks for both entries
-  google.script.run
-    .withSuccessHandler(r1=>{
-      if(r1 && r1.ok && r1.picks){
-        fillPicksInForm(r1.picks, 1);
-      }
-    })
-    .withFailureHandler(err=>{
-      console.error("Error loading picks entry 1:", err);
-    })
-    .api_getMyPicks(SESSION.token, SESSION.jornada, 1);
+  loadPicksForEntry(1);
+  loadPicksForEntry(2);
+}
 
+function loadPicksForEntry(entry){
   google.script.run
-    .withSuccessHandler(r2=>{
-      if(r2 && r2.ok && r2.picks){
-        fillPicksInForm(r2.picks, 2);
+    .withSuccessHandler(r=>{
+      if(r && r.ok && r.picks){
+        fillPicksInForm(r.picks, entry);
       }
     })
     .withFailureHandler(err=>{
-      console.error("Error loading picks entry 2:", err);
+      console.error(`Error loading picks entry ${entry}:`, err);
     })
-    .api_getMyPicks(SESSION.token, SESSION.jornada, 2);
+    .api_getMyPicks(SESSION.token, SESSION.jornada, entry);
 }
 
 function fillPicksInForm(picks, entry){
@@ -266,7 +260,7 @@ function fillPicksInForm(picks, entry){
     const marcEl = document.getElementById(`marc_${idx}_${entry}`);
 
     if(pickEl && saved.pick) pickEl.value = saved.pick;
-    if(marcEl && saved.gl != null && saved.gv != null && saved.gl !== "" && saved.gv !== ""){
+    if(marcEl && saved.gl && saved.gv && saved.gl !== "" && saved.gv !== ""){
       marcEl.value = `${saved.gl}-${saved.gv}`;
     }
   });
