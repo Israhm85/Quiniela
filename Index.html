@@ -148,6 +148,23 @@ let SESSION = { token:null, jornada:null, lockMinutes:10, partidos:[] };
 
 function esc(s){return String(s||"").replace(/[&<>"]/g,m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[m]))}
 
+/* ---------- TOKEN VALIDATION ---------- */
+function validateTokenAndBootstrap(token){
+  google.script.run
+    .withSuccessHandler(loginR=>{
+      if(!loginR || !loginR.ok){
+        document.getElementById("regMsg").innerHTML = `<span class="bad">Error al validar: ${esc(loginR?.error || "desconocido")}</span>`;
+        return;
+      }
+      document.getElementById("regMsg").innerHTML = `<span class="ok">✅ Registro exitoso. Cargando predicciones...</span>`;
+      bootstrap();
+    })
+    .withFailureHandler(err=>{
+      document.getElementById("regMsg").innerHTML = `<span class="bad">Error de conexión: ${esc(err?.message || "intenta de nuevo")}</span>`;
+    })
+    .api_loginByToken(token);
+}
+
 /* ---------- REGISTRO ---------- */
 function register(){
   const nombre = document.getElementById("regNombre").value.trim();
@@ -162,21 +179,7 @@ function register(){
     }
     SESSION.token = r.token;
     localStorage.setItem("q_token", r.token);
-    
-    // Validate token and show predictions form
-    google.script.run
-      .withSuccessHandler(loginR=>{
-        if(!loginR || !loginR.ok){
-          document.getElementById("regMsg").innerHTML = `<span class="bad">Error al validar: ${esc(loginR?.error || "desconocido")}</span>`;
-          return;
-        }
-        document.getElementById("regMsg").innerHTML = `<span class="ok">✅ Registro exitoso. Cargando predicciones...</span>`;
-        bootstrap();
-      })
-      .withFailureHandler(err=>{
-        document.getElementById("regMsg").innerHTML = `<span class="bad">Error de conexión: ${esc(err?.message || "intenta de nuevo")}</span>`;
-      })
-      .api_loginByToken(r.token);
+    validateTokenAndBootstrap(r.token);
   }).api_register(nombre);
 }
 
