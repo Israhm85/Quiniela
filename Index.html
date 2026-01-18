@@ -226,7 +226,7 @@ function bootstrap(){
 
 /* ---------- FORMULARIO ---------- */
 function generateMatchKey(jornada, local, visit){
-  return `${jornada}|${local}|${visit}`.toLowerCase();
+  return `${jornada}|${local}`.toLowerCase() + `|${visit}`.toLowerCase();
 }
 
 function loadMyPicks(){
@@ -260,7 +260,7 @@ function fillPicksInForm(picks, entry){
     const marcEl = document.getElementById(`marc_${idx}_${entry}`);
 
     if(pickEl && saved.pick) pickEl.value = saved.pick;
-    if(marcEl && saved.gl && saved.gv && saved.gl !== "" && saved.gv !== ""){
+    if(marcEl && saved.gl && saved.gv){
       marcEl.value = `${saved.gl}-${saved.gv}`;
     }
   });
