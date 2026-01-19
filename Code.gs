@@ -2174,18 +2174,44 @@ function actualizarHojaImpresion() {
     todosPartidos.push({ local: "", visitante: "" });
   }
   
-  // Llenar primera sección: C4:C13 (locales) y E4:E13 (visitantes)
+  // Llenar primera sección: B2:B11 (locales) y D2:D11 (visitantes)
   const locales1 = todosPartidos.map(p => [p.local]);
   const visitantes1 = todosPartidos.map(p => [p.visitante]);
   
-  shPrint.getRange("C4:C13").setValues(locales1);
-  shPrint.getRange("E4:E13").setValues(visitantes1);
+  shPrint.getRange("B2:B11").setValues(locales1);
+  shPrint.getRange("D2:D11").setValues(visitantes1);
   
-  // Llenar segunda sección: C15:C24 (locales) y E15:E24 (visitantes)
-  shPrint.getRange("C15:C24").setValues(locales1);
-  shPrint.getRange("E15:E24").setValues(visitantes1);
+  // Llenar segunda sección: B13:B22 (locales) y D13:D22 (visitantes)
+  shPrint.getRange("B13:B22").setValues(locales1);
+  shPrint.getRange("D13:D22").setValues(visitantes1);
   
-  SpreadsheetApp.getUi().alert(`✅ Hoja de impresión actualizada\n\n${todosPartidos.filter(p => p.local).length} partidos cargados para la jornada ${jornada}.`);
+  // Copiar el rango A1:E22 a 5 ubicaciones adicionales
+  const rangoOriginal = shPrint.getRange("A1:E22");
+  const valores = rangoOriginal.getValues();
+  const formatos = rangoOriginal.getBackgrounds();
+  const fontWeights = rangoOriginal.getFontWeights();
+  const fontSizes = rangoOriginal.getFontSizes();
+  
+  // Definir las ubicaciones de destino
+  const destinos = [
+    "G1:K22",   // Primera copia
+    "M1:Q22",   // Segunda copia
+    "A24:E45",  // Tercera copia
+    "G24:K45",  // Cuarta copia
+    "M24:Q45"   // Quinta copia
+  ];
+  
+  // Copiar a cada destino
+  for (const destino of destinos) {
+    const rangoDest = shPrint.getRange(destino);
+    rangoDest.setValues(valores);
+    rangoDest.setBackgrounds(formatos);
+    rangoDest.setFontWeights(fontWeights);
+    rangoDest.setFontSizes(fontSizes);
+  }
+  
+  SpreadsheetApp.getUi().alert(`✅ Hoja de impresión actualizada\n\n${todosPartidos.filter(p => p.local).length} partidos cargados para la jornada ${jornada}.\n\nSe crearon 6 copias (1 original + 5 copias) del formato.`);
 }
+
 
 
