@@ -961,6 +961,7 @@ function importarCalendarioESPN() {
 
   const existing = existingPartidosKeySet_();
   const rows = [];
+  let sinJornada = 0; // Track matches without jornada
 
   for (const ev of events) {
     const comp = (ev.competitions && ev.competitions[0]) ? ev.competitions[0] : null;
@@ -985,15 +986,97 @@ function importarCalendarioESPN() {
     if (visitLogo) upsertEquipoLogo_(visitante, visitLogo);
 
     let jornada = "";
-    if (ev.week && typeof ev.week.number !== "undefined") jornada = Number(ev.week.number) || "";
-    if (!jornada && comp.week && typeof comp.week.number !== "undefined") jornada = Number(comp.week.number) || "";
-    if (!jornada && ev.week && ev.week.text) {
+    
+    // Try multiple locations for week/jornada number
+    if (ev.week && typeof ev.week.number !== "undefined" && ev.week.number !== null) {
+      const num = Number(ev.week.number);
+      if (!isNaN(num) && num >= 0) jornada = num;
+    }
+    
+    if (jornada === "" && comp.week && typeof comp.week.number !== "undefined" && comp.week.number !== null) {
+      const num = Number(comp.week.number);
+      if (!isNaN(num) && num >= 0) jornada = num;
+    }
+    
+    // Try competition season type (sometimes has week info)
+    if (jornada === "" && comp.season && comp.season.type && comp.season.type === 1) {
+      // Regular season - try to extract from competition notes or status
+      if (comp.status && comp.status.type && comp.status.type.detail) {
+        const detailMatch = String(comp.status.type.detail).match(/(?:Week|Semana)\s+(\d+)/i);
+        if (detailMatch) {
+          const num = Number(detailMatch[1]);
+          if (!isNaN(num) && num >= 0) jornada = num;
+        }
+      }
+    }
+    
+    // Try week text as fallback
+    if (jornada === "" && ev.week && ev.week.text) {
       const m = String(ev.week.text).match(/(\d+)/);
-      if (m) jornada = Number(m[1]) || "";
+      if (m) {
+        const num = Number(m[1]);
+        if (!isNaN(num) && num >= 0) jornada = num;
+      }
+    }
+    
+    // Try competition notes
+    if (jornada === "" && comp.notes && Array.isArray(comp.notes)) {
+      for (const note of comp.notes) {
+        if (note.headline && typeof note.headline === "string") {
+          const noteMatch = note.headline.match(/(?:Week|Semana|Jornada)\s+(\d+)/i);
+          if (noteMatch) {
+            const num = Number(noteMatch[1]);
+            if (!isNaN(num) && num >= 0) {
+              jornada = num;
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    // Try event name (e.g., "Liga MX - Jornada 4")
+    if (jornada === "" && (ev.name || ev.shortName)) {
+      const eventName = String(ev.name || ev.shortName || "");
+      const nameMatch = eventName.match(/(?:Week|Semana|Jornada|Matchday|J)\s*[:\-]?\s*(\d+)/i);
+      if (nameMatch) {
+        const num = Number(nameMatch[1]);
+        if (!isNaN(num) && num >= 0) jornada = num;
+      }
+    }
+    
+    // Try season type and week (alternative season structure)
+    if (jornada === "" && ev.season && ev.season.type) {
+      // Check if there's week info in event season
+      if (ev.season.week && typeof ev.season.week === "number") {
+        const num = Number(ev.season.week);
+        if (!isNaN(num) && num >= 0) jornada = num;
+      }
+    }
+    
+    // Try competition season slug or name
+    if (jornada === "" && comp.season && comp.season.slug) {
+      const slugMatch = String(comp.season.slug).match(/week-(\d+)|jornada-(\d+)/i);
+      if (slugMatch) {
+        const num = Number(slugMatch[1] || slugMatch[2]);
+        if (!isNaN(num) && num >= 0) jornada = num;
+      }
     }
 
     const key = makePartidoKey_(fecha, local, visitante);
     if (existing.has(key)) continue;
+
+    // Track if jornada is missing
+    if (jornada === "") {
+      sinJornada++;
+      Logger.log(`⚠️ Partido sin jornada: ${local} vs ${visitante} - ${fecha}`);
+      Logger.log(`   ev.week: ${JSON.stringify(ev.week)}`);
+      Logger.log(`   comp.week: ${JSON.stringify(comp.week)}`);
+      Logger.log(`   comp.season: ${JSON.stringify(comp.season)}`);
+      Logger.log(`   comp.status: ${JSON.stringify(comp.status)}`);
+      Logger.log(`   ev.season: ${JSON.stringify(ev.season)}`);
+      Logger.log(`   Nombre evento: ${ev.name || ev.shortName || "N/A"}`);
+    }
 
     rows.push([jornada, fecha, local, visitante, "", ""]);
     existing.add(key);
@@ -1007,7 +1090,11 @@ function importarCalendarioESPN() {
   shPar.getRange(shPar.getLastRow() + 1, 1, rows.length, 6).setValues(rows);
   shPar.getRange(2, 2, shPar.getLastRow() - 1, 1).setNumberFormat("mm/dd/yyyy hh:mm AM/PM");
 
-  SpreadsheetApp.getUi().alert(`✅ Importé ${rows.length} partidos desde ESPN y guardé logos en EQUIPOS.`);
+  let mensaje = `✅ Importé ${rows.length} partidos desde ESPN y guardé logos en EQUIPOS.`;
+  if (sinJornada > 0) {
+    mensaje += `\n\n⚠️ ${sinJornada} partido(s) sin número de jornada. Revisa el log (Ver → Registros) para más detalles.`;
+  }
+  SpreadsheetApp.getUi().alert(mensaje);
 }
 function existingPartidosKeySet_() {
   const ss = SpreadsheetApp.getActive();
@@ -1305,5 +1392,115 @@ function buildLigaMxTeamLogoMap_() {
   }
   return map;
 }
+function rellenarJornadasFaltantes() {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEETS.PARTIDOS);
+  const lr = sh.getLastRow();
+  if (lr < 2) {
+    SpreadsheetApp.getUi().alert("PARTIDOS está vacío.");
+    return;
+  }
 
+  // Config opcional (si no existe usa defaults)
+  const juegosPorJornada = Number(getConfig_("JuegosPorJornada")) || 9;
+  const gapDias = Number(getConfig_("GapDiasNuevaJornada")) || 3;
+
+  // A..F = [JORNADA, FECHA, LOCAL, VISITANTE, MARCADOR, RES]
+  const data = sh.getRange(2, 1, lr - 1, 6).getValues();
+
+  // Normaliza fechas y arma arreglo con timestamp para ordenar
+  const rows = data.map((r, idx) => {
+    const rawFecha = r[1];
+    let d = null;
+
+    if (rawFecha instanceof Date && !isNaN(rawFecha.getTime())) {
+      d = rawFecha;
+    } else if (rawFecha) {
+      const parsed = new Date(rawFecha);
+      d = isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    return {
+      idx,
+      jornada: r[0],
+      dateObj: d,
+      ts: d ? d.getTime() : null,
+      local: r[2],
+      visit: r[3],
+    };
+  });
+
+  // Filas válidas (fecha + equipos)
+  const valid = rows.filter(x =>
+    x.ts !== null &&
+    String(x.local || "").trim() &&
+    String(x.visit || "").trim()
+  );
+
+  if (!valid.length) {
+    SpreadsheetApp.getUi().alert("No encontré filas válidas con FECHA/LOCAL/VISITANTE. Revisa FECHA.");
+    return;
+  }
+
+  // Orden cronológico
+  valid.sort((a, b) => a.ts - b.ts);
+
+  // Detectar jornada máxima ya existente
+  let maxJornada = 0;
+  for (const r of rows) {
+    const j = Number(r.jornada);
+    if (j && j > maxJornada) maxJornada = j;
+  }
+
+  // Si hay algunas jornadas ya puestas, NO las tocamos, solo rellenamos las vacías.
+  // Empezamos en 1 (Liga MX)
+  let currentJornada = 1;
+  let countInBlock = 0;
+  let lastTs = null;
+
+  for (const v of valid) {
+    const existingJ = Number(data[v.idx][0]);
+
+    // Si ya hay jornada, sincroniza “estado” para seguir agrupando razonable
+    if (existingJ) {
+      currentJornada = existingJ;
+      countInBlock = 0;
+      lastTs = v.ts;
+      continue;
+    }
+
+    // Si hay salto grande de días y ya llevamos suficiente bloque, pasamos a la sig jornada
+    if (lastTs !== null) {
+      const diffDays = (v.ts - lastTs) / (1000 * 60 * 60 * 24);
+      if (diffDays >= gapDias && countInBlock >= Math.max(3, Math.floor(juegosPorJornada * 0.6))) {
+        currentJornada += 1;
+        countInBlock = 0;
+      }
+    }
+
+    // Si ya juntamos muchos juegos en la jornada, saltamos
+    if (countInBlock >= juegosPorJornada) {
+      currentJornada += 1;
+      countInBlock = 0;
+    }
+
+    data[v.idx][0] = currentJornada; // set JORNADA
+    countInBlock += 1;
+    lastTs = v.ts;
+  }
+
+  // Escribir solo columna A (JORNADA)
+  const jornadaCol = data.map(r => [r[0]]);
+  sh.getRange(2, 1, jornadaCol.length, 1).setValues(jornadaCol);
+
+  SpreadsheetApp.getUi().alert("✅ Listo: se rellenó la columna JORNADA automáticamente.");
+}
+function normalizeTeam_(s) {
+  return String(s || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w\s]/g, ""); // quita símbolos
+}
 
