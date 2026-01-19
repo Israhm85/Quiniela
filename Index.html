@@ -4,6 +4,21 @@
   <meta charset="UTF-8">
   <title>Quiniela Liga MX</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="⚽ Quiniela Liga MX - Participa Ahora">
+  <meta property="og:description" content="Haz tus pronósticos de la Liga MX. 🏆 Premio Mayor para más aciertos. 🥈 Premio Menor por marcadores exactos. ¡2 pronósticos por jugador!">
+  <meta property="og:site_name" content="Quiniela Liga MX">
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="⚽ Quiniela Liga MX - Participa Ahora">
+  <meta name="twitter:description" content="Haz tus pronósticos de la Liga MX. 🏆 Premio Mayor para más aciertos. 🥈 Premio Menor por marcadores exactos.">
+  
+  <!-- General Meta Tags -->
+  <meta name="description" content="Quiniela Liga MX - Haz tus pronósticos y compite por premios. Sistema de doble entrada con premio mayor y menor.">
+  <meta name="keywords" content="quiniela, liga mx, futbol, pronosticos, predicciones">
 
   <style>
     :root{
@@ -39,21 +54,71 @@
       background:#0c0f1d;
       color:var(--txt);
       font-size:16px;
+      box-sizing:border-box;
+      -webkit-appearance:none;
+      -moz-appearance:none;
+      appearance:none;
+      transition:all 0.2s ease;
+    }
+    input:focus,select:focus{
+      outline:none;
+      border-color:var(--accent);
+      box-shadow:0 0 0 3px rgba(124,156,255,0.2);
+    }
+    input:disabled,select:disabled{
+      opacity:0.6;
+      cursor:not-allowed;
     }
     button{
       background:linear-gradient(180deg,#6f8cff,#5a74ff);
       border:none;
       font-weight:800;
       cursor:pointer;
+      touch-action:manipulation; /* Prevents double-tap zoom on mobile */
+    }
+    button:active{
+      transform:scale(0.98);
+      opacity:0.9;
+    }
+    button:disabled{
+      opacity:0.5;
+      cursor:not-allowed;
     }
     button.secondary{
       background:#0c0f1d;
       border:1px solid var(--line);
       font-weight:700;
     }
-    table{width:100%;border-collapse:collapse;font-size:14px}
-    th,td{padding:8px;border-bottom:1px solid var(--line)}
-    th{opacity:.8;text-align:left}
+    button.secondary:active{
+      background:rgba(255,255,255,0.05);
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:14px;
+    }
+    th,td{
+      padding:8px;
+      border-bottom:1px solid var(--line);
+      text-align:left;
+    }
+    th{
+      opacity:.8;
+      font-weight:700;
+      position:sticky;
+      top:0;
+      background:var(--card);
+      z-index:1;
+    }
+    td{
+      vertical-align:middle;
+    }
+    /* Responsive table wrapper */
+    .table-wrapper{
+      overflow-x:auto;
+      -webkit-overflow-scrolling:touch;
+      margin:10px 0;
+    }
     .center{text-align:center}
     .ok{color:var(--ok)}
     .bad{color:var(--bad)}
@@ -91,9 +156,145 @@
       opacity:.6;
       filter:grayscale(1);
     }
+    
+    /* ===== RESPONSIVE DESIGN ===== */
+    
+    /* Tablets and smaller desktops (768px - 1024px) */
+    @media(max-width:1024px){
+      .wrap{max-width:100%;padding:20px}
+      h1{font-size:1.8em}
+      h2{font-size:1.5em}
+    }
+    
+    /* Tablets (700px - 768px) */
+    @media(max-width:768px){
+      .wrap{padding:16px}
+      h1{font-size:1.6em}
+      h2{font-size:1.3em}
+      .team span{max-width:160px;}
+      table{font-size:13px}
+      th,td{padding:6px}
+    }
+    
+    /* Mobile devices (below 700px) */
     @media(max-width:700px){
       .twoCols{grid-template-columns:1fr;}
       .team span{max-width:140px;}
+      .wrap{padding:12px}
+      h1{font-size:1.5em;margin:.2em 0 .4em 0}
+      h2{font-size:1.2em;margin:.2em 0 .4em 0}
+      h3{font-size:1.1em}
+      
+      /* Touch-friendly buttons and inputs */
+      input,select,button{
+        padding:14px 12px;
+        font-size:16px;
+        min-height:48px; /* Better touch target - WCAG 2.1 guideline */
+      }
+      
+      button{
+        margin-top:8px;
+        font-size:17px;
+      }
+      
+      /* Card spacing */
+      .card{
+        padding:12px;
+        margin-bottom:12px;
+        border-radius:12px;
+      }
+      
+      .miniCard{
+        padding:8px;
+        border-radius:10px;
+      }
+      
+      /* Match header adjustments */
+      .matchHead{
+        flex-direction:column;
+        gap:8px;
+        text-align:center;
+      }
+      
+      .team{
+        justify-content:center;
+        width:100%;
+      }
+      
+      .logo{
+        width:32px;
+        height:32px; /* Larger logos on mobile */
+      }
+      
+      .vs{
+        font-size:14px;
+        margin:4px 0;
+      }
+      
+      /* Table responsive */
+      .table-wrapper,table{
+        font-size:12px;
+        overflow-x:auto;
+        -webkit-overflow-scrolling:touch;
+      }
+      
+      table{
+        display:block;
+      }
+      
+      th,td{
+        padding:8px 4px;
+        white-space:nowrap;
+      }
+      
+      /* Small text legibility */
+      .small{
+        font-size:14px;
+        line-height:1.4;
+      }
+      
+      .miniTitle{
+        font-size:15px;
+      }
+    }
+    
+    /* Extra small devices (below 400px) */
+    @media(max-width:400px){
+      .wrap{padding:10px}
+      h1{font-size:1.3em}
+      h2{font-size:1.1em}
+      
+      .team span{
+        max-width:100px;
+        font-size:14px;
+      }
+      
+      .logo{
+        width:28px;
+        height:28px;
+      }
+      
+      input,select,button{
+        padding:12px;
+        font-size:15px;
+      }
+      
+      .card{
+        padding:10px;
+        border-radius:10px;
+      }
+      
+      table{font-size:11px}
+      th,td{padding:6px 2px}
+    }
+    
+    /* Landscape orientation on mobile */
+    @media(max-height:500px) and (orientation:landscape){
+      .wrap{padding:8px}
+      h1{font-size:1.2em;margin:.1em 0 .3em 0}
+      h2{font-size:1em;margin:.1em 0 .3em 0}
+      .card{padding:8px;margin-bottom:8px}
+      input,select,button{padding:10px}
     }
   </style>
 </head>
@@ -118,6 +319,15 @@
   <div class="card" id="formCard" style="display:none">
     <h2 id="jorTitle"></h2>
     <div class="small">Tienes <strong>2 pronósticos</strong>. Cada uno compite por separado.</div>
+
+    <!-- INFO DE PREMIOS -->
+    <div style="margin-top:12px;padding:12px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px">
+      <div class="small" style="line-height:1.6">
+        <strong style="color:var(--ok)">🏆 Premio Mayor:</strong> <span id="premioMayorMonto" style="color:var(--ok)">$0</span> - Quien acierte más resultados (L/V/E). Si hay empate, se reparte.<br>
+        <strong style="color:var(--accent)">🥈 Premio Menor:</strong> <span id="premioMenorMonto" style="color:var(--accent)">$0</span> - Quien acierte más marcadores exactos. Sin empates (desempate: exactos → aciertos → primero en enviar).
+      </div>
+      <div id="prizePoolInfo" class="small" style="margin-top:8px;opacity:.7"></div>
+    </div>
 
     <div id="picksBox" style="margin-top:10px"></div>
 
@@ -221,6 +431,7 @@ function bootstrap(){
 
       renderForm();
       loadMyPicks();
+      loadPrizePool();
     })
     .withFailureHandler(err=>{
       console.error("api_bootstrap error:", err);
@@ -391,11 +602,60 @@ function submitAll(){
   }).api_submit({ token:SESSION.token, jornada:SESSION.jornada, entry:1, picks:picks1 });
 }
 
+/* ---------- PRIZE POOL ---------- */
+function loadPrizePool(){
+  google.script.run.withSuccessHandler(r=>{
+    if(!r || !r.ok) return;
+    
+    const premioMayorEl = document.getElementById("premioMayorMonto");
+    const premioMenorEl = document.getElementById("premioMenorMonto");
+    const infoEl = document.getElementById("prizePoolInfo");
+    
+    if(premioMayorEl) premioMayorEl.innerHTML = `$${r.premioMayor.toLocaleString()}`;
+    if(premioMenorEl) premioMenorEl.innerHTML = `$${r.premioMenor.toLocaleString()}`;
+    
+    if(infoEl && r.jugadoresPagados > 0){
+      infoEl.innerHTML = `${r.jugadoresPagados} participante${r.jugadoresPagados > 1 ? 's' : ''} · Bolsa total: $${r.poolPremios.toLocaleString()}`;
+    } else if(infoEl) {
+      infoEl.innerHTML = `Esperando participantes...`;
+    }
+  }).api_getPrizePool();
+}
+
 /* ---------- TABLA / TRANSPARENCIA ---------- */
 function openTabla(){
   document.getElementById("tablaCard").style.display = "block";
+  loadPremioMayor();
   loadPremioMenor();
   loadTabla();
+}
+
+function loadPremioMayor(){
+  const box = document.getElementById("premioMayorBox");
+  box.innerHTML = "";
+
+  google.script.run.withSuccessHandler(r=>{
+    if(!r || !r.ok){
+      box.innerHTML = `<div class="small bad">🏆 Premio mayor: ${esc(r?.error || "No disponible (cierra la jornada)")}</div>`;
+      return;
+    }
+    if(!r.winners || !r.winners.length){
+      box.innerHTML = `<div class="small">🏆 Premio mayor: (sin datos)</div>`;
+      return;
+    }
+    
+    const ganadores = r.winners.map(w => `${esc(w.nombre)} (Entry ${esc(w.entry)})`).join(', ');
+    const compartido = r.winners.length > 1 ? ` <span class="small">(premio compartido)</span>` : '';
+    
+    box.innerHTML = `
+      <div class="card" style="background:rgba(53,212,154,.1);border-color:#35d49a;margin-bottom:10px">
+        🏆 <strong>Premio Mayor - Más Aciertos</strong>${compartido}<br>
+        Ganador${r.winners.length > 1 ? 'es' : ''}: <strong>${ganadores}</strong><br>
+        Aciertos: <strong>${esc(r.maxAciertos)}</strong><br>
+        <div class="small" style="margin-top:6px;opacity:.9">Premio al que tenga más aciertos en resultados (L/V/E). Si hay empate, se reparte el premio.</div>
+      </div>
+    `;
+  }).api_getPremioMayor(SESSION.jornada);
 }
 
 function loadPremioMenor(){
@@ -404,19 +664,19 @@ function loadPremioMenor(){
 
   google.script.run.withSuccessHandler(r=>{
     if(!r || !r.ok){
-      box.innerHTML = `<div class="small bad">🥈 Premio marcador exacto: ${esc(r?.error || "No disponible (cierra la jornada)")}</div>`;
+      box.innerHTML = `<div class="small bad">🥈 Premio menor: ${esc(r?.error || "No disponible (cierra la jornada)")}</div>`;
       return;
     }
     if(!r.winner){
-      box.innerHTML = `<div class="small">🥈 Premio marcador exacto: (sin datos)</div>`;
+      box.innerHTML = `<div class="small">🥈 Premio menor: (sin datos)</div>`;
       return;
     }
     box.innerHTML = `
-      <div class="card" style="background:rgba(255,255,255,.03)">
-        🥈 <strong>Premio marcador exacto</strong><br>
+      <div class="card" style="background:rgba(124,156,255,.1);border-color:#7c9cff;margin-bottom:10px">
+        🥈 <strong>Premio Menor - Marcadores Exactos</strong><br>
         Ganador: <strong>${esc(r.winner.nombre)} (Entry ${esc(r.winner.entry)})</strong><br>
         Exactos: <strong>${esc(r.winner.exactos)}</strong> · Aciertos: <strong>${esc(r.winner.aciertos)}</strong><br>
-        <div class="small" style="margin-top:6px">Desempate: exactos → aciertos → primero en enviar.</div>
+        <div class="small" style="margin-top:6px;opacity:.9">Premio menor a quien tenga más aciertos en marcadores exactos. No hay empates.<br>Desempate: exactos → aciertos → primero en enviar.</div>
       </div>
     `;
   }).api_getPremioMarcadorExactoPorEntry(SESSION.jornada);

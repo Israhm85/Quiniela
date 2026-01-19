@@ -60,7 +60,7 @@ function setupInicial() {
 
   ensureHeaders_(ss.getSheetByName(SHEETS.CONFIG), ["KEY", "VALUE"]);
   ensureHeaders_(ss.getSheetByName(SHEETS.PARTIDOS), ["JORNADA", "FECHA", "LOCAL", "VISITANTE", "MARCADOR", "RES"]);
-  ensureHeaders_(ss.getSheetByName(SHEETS.JUGADORES), ["ID", "NOMBRE", "TOKEN", "ACTIVO", "FECHA_REG"]);
+  ensureHeaders_(ss.getSheetByName(SHEETS.JUGADORES), ["ID", "NOMBRE", "TOKEN", "ACTIVO", "PAGADO", "FECHA_REG"]);
 
   // ✅ PRONOSTICOS con ENTRY
   ensureHeaders_(ss.getSheetByName(SHEETS.PRONOSTICOS), ["JORNADA", "ID", "NOMBRE", "ENTRY", "LOCAL", "VISITANTE", "PICK", "PICK_MARCADOR", "PUNTOS", "TIMESTAMP"]);
@@ -82,12 +82,16 @@ function setupInicial() {
     ["LockMinutes", map["LockMinutes"] ?? 10],
     ["Admins", map["Admins"] ?? ""],
     ["JornadaCerrada", map["JornadaCerrada"] ?? "NO"],
+    ["CostoEntry", map["CostoEntry"] ?? 50],
+    ["PorcentajeComision", map["PorcentajeComision"] ?? 20],
+    ["PorcentajePremioMenor", map["PorcentajePremioMenor"] ?? 15],
+    ["PorcentajePremioMayor", map["PorcentajePremioMayor"] ?? 85],
   ];
 
   if (shCfg.getLastRow() > 1) shCfg.getRange(2, 1, shCfg.getLastRow() - 1, 2).clearContent();
   shCfg.getRange(2, 1, defaults.length, 2).setValues(defaults);
 
-  SpreadsheetApp.getUi().alert("Setup listo ✅ (incluye ENTRY 2x1 + EQUIPOS logos).");
+  SpreadsheetApp.getUi().alert("Setup listo ✅ (incluye ENTRY 2x1 + EQUIPOS logos + sistema de pagos + % configurables).");
 }
 
 
@@ -114,12 +118,12 @@ function uiAgregarJugador() {
 function registrarJugador_(nombre) {
   const ss = SpreadsheetApp.getActive();
   const sh = ss.getSheetByName(SHEETS.JUGADORES);
-  ensureHeaders_(sh, ["ID", "NOMBRE", "TOKEN", "ACTIVO", "FECHA_REG"]);
+  ensureHeaders_(sh, ["ID", "NOMBRE", "TOKEN", "ACTIVO", "PAGADO", "FECHA_REG"]);
 
   const norm = normalizeName_(nombre);
   const lr = sh.getLastRow();
   if (lr >= 2) {
-    const rows = sh.getRange(2,1,lr-1,5).getValues();
+    const rows = sh.getRange(2,1,lr-1,6).getValues();
     for (const r of rows) {
       if (normalizeName_(r[1]) === norm) {
         return { ok:false, error:"⛔ Ese nombre ya existe (no se permiten repetidos)." };
@@ -129,8 +133,62 @@ function registrarJugador_(nombre) {
 
   const id = nextJugadorId_(sh);
   const token = Utilities.getUuid();
-  sh.appendRow([id, nombre, token, "SI", new Date()]);
+  sh.appendRow([id, nombre, token, "SI", "NO", new Date()]);
+  
+  // Setup checkbox for PAGADO column (column 5)
+  const newRow = sh.getLastRow();
+  setupCheckboxForPagado_(sh, newRow);
+  
   return { ok:true, id, token };
+}
+
+/**
+ * Setup checkbox data validation for PAGADO column
+ */
+function setupCheckboxForPagado_(sheet, row) {
+  const pagadoCol = 5; // Column E (PAGADO)
+  const cell = sheet.getRange(row, pagadoCol);
+  
+  // Create checkbox validation with checked="SI" and unchecked="NO"
+  const rule = SpreadsheetApp.newDataValidation()
+    .requireCheckbox("SI", "NO")
+    .setAllowInvalid(false)
+    .build();
+  
+  cell.setDataValidation(rule);
+  
+  // Set initial value to unchecked (NO)
+  cell.setValue("NO");
+}
+
+/**
+ * Batch setup checkboxes for all existing players in JUGADORES sheet
+ * Run this manually once to convert existing SI/NO values to checkboxes
+ */
+function setupAllCheckboxesForPagado() {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEETS.JUGADORES);
+  const lr = sh.getLastRow();
+  
+  if (lr < 2) {
+    Logger.log("No players to setup");
+    return;
+  }
+  
+  const pagadoCol = 5; // Column E (PAGADO)
+  const range = sh.getRange(2, pagadoCol, lr - 1, 1);
+  
+  // Create checkbox validation
+  const rule = SpreadsheetApp.newDataValidation()
+    .requireCheckbox("SI", "NO")
+    .setAllowInvalid(false)
+    .build();
+  
+  // Apply to all player rows
+  range.setDataValidation(rule);
+  
+  Logger.log(`Setup checkboxes for ${lr - 1} players`);
+  SpreadsheetApp.getUi().alert(`✅ Checkboxes configurados para ${lr - 1} jugadores en la columna PAGADO`);
 }
 
 function nextJugadorId_(shJug) {
@@ -498,10 +556,16 @@ function findJugadorByToken_(token) {
   const lr = sh.getLastRow();
   if (lr < 2) return null;
 
-  const rows = sh.getRange(2,1,lr-1,5).getValues();
+  const rows = sh.getRange(2,1,lr-1,6).getValues();
   for (const r of rows) {
     if (String(r[2] || "").trim() === String(token || "").trim()) {
-      return { id: Number(r[0]), nombre: String(r[1] || ""), token: String(r[2]||""), activo: String(r[3]||"SI") };
+      return { 
+        id: Number(r[0]), 
+        nombre: String(r[1] || ""), 
+        token: String(r[2]||""), 
+        activo: String(r[3]||"SI"),
+        pagado: String(r[4]||"NO").toUpperCase() === "SI"
+      };
     }
   }
   return null;
@@ -532,7 +596,7 @@ function doGet(e) {
   const tpl = HtmlService.createTemplateFromFile("Index");
   tpl.urlToken = (e?.parameter?.t || "").toString().trim();
   return tpl.evaluate()
-    .setTitle(WEBAPP.TITLE)
+    .setTitle("⚽ Quiniela Liga MX - Participa Ahora")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
@@ -761,6 +825,61 @@ function api_getPublicState() {
   return { ok:true, jornada: Number(getConfig_("JornadaActual")) || 1, jornadaCerrada: isJornadaCerrada_() };
 }
 
+/***************
+ * OBTENER INFORMACIÓN DEL POOL DE PREMIOS
+ * Calcula montos basados en jugadores que pagaron
+ ***************/
+function api_getPrizePool() {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEETS.JUGADORES);
+  const lr = sh.getLastRow();
+  
+  if (lr < 2) return { ok: true, jugadoresPagados: 0, costoEntry: 0, totalPool: 0, premioMayor: 0, premioMenor: 0 };
+  
+  const costoEntry = Number(getConfig_("CostoEntry")) || 50;
+  
+  // Obtener porcentajes configurables
+  const pctComision = Number(getConfig_("PorcentajeComision")) || 20;
+  const pctPremioMenor = Number(getConfig_("PorcentajePremioMenor")) || 15;
+  const pctPremioMayor = Number(getConfig_("PorcentajePremioMayor")) || 85;
+  
+  // Contar jugadores que han pagado
+  const rows = sh.getRange(2, 1, lr - 1, 6).getValues();
+  let jugadoresPagados = 0;
+  
+  for (const r of rows) {
+    const activo = String(r[3] || "").toUpperCase();
+    const pagado = String(r[4] || "").toUpperCase();
+    if (activo === "SI" && pagado === "SI") {
+      jugadoresPagados++;
+    }
+  }
+  
+  // Calcular pool de premios con porcentajes configurables
+  const totalRecaudado = jugadoresPagados * costoEntry;
+  const comision = totalRecaudado * (pctComision / 100);
+  const poolPremios = totalRecaudado * (1 - pctComision / 100);
+  
+  const premioMenor = poolPremios * (pctPremioMenor / 100);
+  const premioMayor = poolPremios * (pctPremioMayor / 100);
+  
+  return {
+    ok: true,
+    jugadoresPagados,
+    costoEntry,
+    totalRecaudado,
+    comision,
+    poolPremios,
+    premioMayor: Math.floor(premioMayor),
+    premioMenor: Math.floor(premioMenor),
+    porcentajes: {
+      comision: pctComision,
+      premioMenor: pctPremioMenor,
+      premioMayor: pctPremioMayor
+    }
+  };
+}
+
 function api_getTablaGeneral() {
   const ss = SpreadsheetApp.getActive();
   const sh = ss.getSheetByName(SHEETS.TABLA);
@@ -778,6 +897,131 @@ function api_getTablaGeneral() {
     ultimaJ: r[4],
   }));
   return { ok:true, rows };
+}
+
+/***************
+ * PREMIO MAYOR (MÁS ACIERTOS) - POR JORNADA
+ * - Gana quien tenga más aciertos (L/V/E correctos)
+ * - Si hay empate, se reparte el premio (múltiples ganadores)
+ * - Solo visible si JornadaCerrada=SI
+ ***************/
+function api_getPremioMayor(jornadaOpt) {
+  const jornada = Number(jornadaOpt) || Number(getConfig_("JornadaActual")) || 1;
+
+  // Solo visible si está cerrada
+  if (!isJornadaCerrada_()) {
+    return { ok: false, error: "La jornada aún no está cerrada." };
+  }
+
+  const ss = SpreadsheetApp.getActive();
+
+  // 1) Index de resultados reales por partido
+  const shPar = ss.getSheetByName(SHEETS.PARTIDOS);
+  const lrP = shPar.getLastRow();
+  if (lrP < 2) return { ok: false, error: "PARTIDOS vacío." };
+
+  const partidos = shPar.getRange(2, 1, lrP - 1, 6).getValues()
+    .filter(r => Number(r[0]) === jornada)
+    .map(r => ({
+      local: String(r[2] || "").trim(),
+      visit: String(r[3] || "").trim(),
+      marcadorReal: String(r[4] || "").trim(),
+      resReal: String(r[5] || "").trim() || (r[4] ? (calcResFromMarcador_(String(r[4]).trim()) || "") : "")
+    }))
+    .filter(p => p.local && p.visit);
+
+  if (!partidos.length) return { ok: false, error: `No hay partidos para jornada ${jornada}.` };
+
+  const resIndex = {};
+  for (const p of partidos) {
+    resIndex[makeKeyRes_(jornada, p.local, p.visit)] = p.resReal;
+  }
+
+  // 2) Leer PRONOSTICOS de la jornada
+  const shPro = ss.getSheetByName(SHEETS.PRONOSTICOS);
+  const lr = shPro.getLastRow();
+  if (lr < 2) return { ok: false, error: "PRONOSTICOS vacío." };
+
+  // 2.1) Obtener IDs de jugadores que pagaron
+  const shJug = ss.getSheetByName(SHEETS.JUGADORES);
+  const lrJ = shJug.getLastRow();
+  const jugadoresPagados = new Set();
+  if (lrJ >= 2) {
+    const jugRows = shJug.getRange(2, 1, lrJ - 1, 6).getValues();
+    for (const j of jugRows) {
+      const id = Number(j[0]);
+      const activo = String(j[3] || "").toUpperCase();
+      const pagado = String(j[4] || "").toUpperCase();
+      if (activo === "SI" && pagado === "SI") {
+        jugadoresPagados.add(id);
+      }
+    }
+  }
+
+  const data = shPro.getRange(2, 1, lr - 1, 10).getValues();
+
+  // 3) Contar aciertos por entry (solo jugadores pagados)
+  const map = new Map(); // key = id|entry
+  for (const r of data) {
+    const jor = Number(r[0]);
+    if (jor !== jornada) continue;
+
+    const id = Number(r[1]);
+    
+    // Solo incluir jugadores que pagaron
+    if (!jugadoresPagados.has(id)) continue;
+    
+    const nombre = String(r[2] || "");
+    const entry = Number(r[3]) || 1;
+    const local = String(r[4] || "").trim();
+    const visit = String(r[5] || "").trim();
+    const pick = String(r[6] || "").trim().toUpperCase();
+
+    if (!id || !local || !visit) continue;
+
+    const key = `${id}|${entry}`;
+    if (!map.has(key)) {
+      map.set(key, { id, entry, nombre, aciertos: 0 });
+    }
+
+    const obj = map.get(key);
+    if (!obj.nombre && nombre) obj.nombre = nombre;
+
+    // Contar aciertos si hay resultado real
+    const kPartido = makeKeyRes_(jornada, local, visit);
+    const resReal = resIndex[kPartido];
+    if (resReal && pick && pick === resReal) {
+      obj.aciertos += 1;
+    }
+  }
+
+  const rows = Array.from(map.values());
+  if (!rows.length) {
+    return { ok: true, jornada, winners: [], maxAciertos: 0 };
+  }
+
+  // 4) Encontrar el máximo de aciertos
+  const maxAciertos = Math.max(...rows.map(r => r.aciertos));
+
+  // 5) Todos los que tengan el máximo son ganadores (se reparte el premio)
+  const winners = rows
+    .filter(r => r.aciertos === maxAciertos)
+    .sort((a, b) => {
+      if (a.id !== b.id) return a.id - b.id;
+      return a.entry - b.entry;
+    });
+
+  return {
+    ok: true,
+    jornada,
+    maxAciertos,
+    winners: winners.map(w => ({
+      id: w.id,
+      entry: w.entry,
+      nombre: w.nombre,
+      aciertos: w.aciertos
+    }))
+  };
 }
 
 function getPartidosWebPorJornada_(jornada, lockMinutes) {
@@ -1180,16 +1424,36 @@ function api_getPremioMarcadorExactoPorEntry(jornadaOpt) {
   const lr = shPro.getLastRow();
   if (lr < 2) return { ok: false, error: "PRONOSTICOS vacío." };
 
+  // 2.1) Obtener IDs de jugadores que pagaron
+  const shJug = ss.getSheetByName(SHEETS.JUGADORES);
+  const lrJ = shJug.getLastRow();
+  const jugadoresPagados = new Set();
+  if (lrJ >= 2) {
+    const jugRows = shJug.getRange(2, 1, lrJ - 1, 6).getValues();
+    for (const j of jugRows) {
+      const id = Number(j[0]);
+      const activo = String(j[3] || "").toUpperCase();
+      const pagado = String(j[4] || "").toUpperCase();
+      if (activo === "SI" && pagado === "SI") {
+        jugadoresPagados.add(id);
+      }
+    }
+  }
+
   // PRONOSTICOS: ["JORNADA","ID","NOMBRE","ENTRY","LOCAL","VISITANTE","PICK","PICK_MARCADOR","PUNTOS","TIMESTAMP"]
   const data = shPro.getRange(2, 1, lr - 1, 10).getValues();
 
-  // 3) Agregación por key=id|entry
+  // 3) Agregación por key=id|entry (solo jugadores pagados)
   const map = new Map(); // key -> stats
   for (const r of data) {
     const jor = Number(r[0]);
     if (jor !== jornada) continue;
 
     const id = Number(r[1]);
+    
+    // Solo incluir jugadores que pagaron
+    if (!jugadoresPagados.has(id)) continue;
+    
     const nombre = String(r[2] || "");
     const entry = Number(r[3]) || 1;
 
