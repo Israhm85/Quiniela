@@ -45,6 +45,7 @@ function onOpen() {
     .addItem("⚽ Sync marcadores (ESPN)", "syncMarcadoresESPN")
     .addSeparator()
     .addItem("🌍 Seleccionar décimo partido", "uiSeleccionarDecimoPartido")
+    .addItem("⚽ Capturar marcador décimo partido", "uiCapturarMarcadorDecimoPartido")
     .addItem("🗑️ Quitar décimo partido", "quitarDecimoPartido")
     .addSeparator()
     .addItem("🗓️ Programar Sync por calendario (hoy/mañana)", "programarSyncPorCalendario")
@@ -2027,6 +2028,76 @@ function quitarDecimoPartido() {
   } else {
     ui.alert(`No había décimo partido configurado para jornada ${jornada}.`);
   }
+}
+
+/***************
+ * CAPTURAR MARCADOR DEL DÉCIMO PARTIDO
+ ***************/
+function uiCapturarMarcadorDecimoPartido() {
+  const ui = SpreadsheetApp.getUi();
+  const jornada = Number(getConfig_("JornadaActual")) || 1;
+  
+  const decimoPartido = getDecimoPartidoPorJornada_(jornada);
+  
+  if (!decimoPartido || !decimoPartido.local || !decimoPartido.visitante) {
+    ui.alert("No hay décimo partido configurado para esta jornada.");
+    return;
+  }
+  
+  const resp = ui.prompt(
+    "Capturar Marcador - Décimo Partido",
+    `${decimoPartido.local} vs ${decimoPartido.visitante}\n\nIngresa el marcador final (ejemplo: 2-1):`,
+    ui.ButtonSet.OK_CANCEL
+  );
+  
+  if (resp.getSelectedButton() !== ui.Button.OK) return;
+  
+  const marcador = resp.getResponseText().trim();
+  
+  if (!marcador || !marcador.includes("-")) {
+    ui.alert("⛔ Formato inválido. Usa formato: 2-1");
+    return;
+  }
+  
+  // Agregar el resultado a la hoja PARTIDOS para que se calculen puntos
+  const ss = SpreadsheetApp.getActive();
+  const shPar = ss.getSheetByName(SHEETS.PARTIDOS);
+  
+  // Buscar si ya existe
+  const lr = shPar.getLastRow();
+  let found = false;
+  
+  if (lr >= 2) {
+    const data = shPar.getRange(2, 1, lr - 1, 6).getValues();
+    for (let i = 0; i < data.length; i++) {
+      const jor = Number(data[i][0]);
+      const local = String(data[i][2] || "").trim();
+      const visit = String(data[i][3] || "").trim();
+      
+      if (jor === jornada && 
+          normalizeTeam_(local) === normalizeTeam_(decimoPartido.local) && 
+          normalizeTeam_(visit) === normalizeTeam_(decimoPartido.visitante)) {
+        // Actualizar marcador
+        const res = calcResFromMarcador_(marcador);
+        shPar.getRange(i + 2, 5).setValue(marcador); // MARCADOR
+        shPar.getRange(i + 2, 6).setValue(res || "");  // RES
+        found = true;
+        break;
+      }
+    }
+  }
+  
+  if (!found) {
+    // Agregar nuevo partido a PARTIDOS
+    const res = calcResFromMarcador_(marcador);
+    shPar.appendRow([jornada, decimoPartido.fecha || "", decimoPartido.local, decimoPartido.visitante, marcador, res || ""]);
+  }
+  
+  // Recalcular puntos
+  calcularPuntosParaJornada_(jornada);
+  actualizarTablaGeneral();
+  
+  ui.alert(`✅ Marcador capturado: ${marcador}\nResultado: ${calcResFromMarcador_(marcador) || "?"}\nPuntos recalculados.`);
 }
 
 function getDecimoPartidoPorJornada_(jornada) {
