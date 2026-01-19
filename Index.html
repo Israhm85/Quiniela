@@ -81,7 +81,6 @@
       width:100%;
       border-collapse:collapse;
       font-size:14px;
-      min-width:100%;
     }
     th,td{
       padding:8px;
@@ -173,9 +172,9 @@
       
       /* Touch-friendly buttons and inputs */
       input,select,button{
-        padding:14px;
+        padding:14px 12px;
         font-size:16px;
-        min-height:48px; /* Better touch target */
+        min-height:48px; /* Better touch target - WCAG 2.1 guideline */
       }
       
       button{
@@ -218,11 +217,14 @@
       }
       
       /* Table responsive */
-      table{
+      .table-wrapper,table{
         font-size:12px;
-        display:block;
         overflow-x:auto;
         -webkit-overflow-scrolling:touch;
+      }
+      
+      table{
+        display:block;
       }
       
       th,td{
