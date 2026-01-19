@@ -16,6 +16,7 @@ const SHEETS = {
   TABLA: "TABLA",
   EQUIPOS: "EQUIPOS", // ✅ NUEVO
   DECIMO_PARTIDO: "DECIMO_PARTIDO", // ✅ DÉCIMO PARTIDO
+  PRINT: "PRINT", // ✅ HOJA DE IMPRESIÓN
 };
 
 
@@ -47,6 +48,8 @@ function onOpen() {
     .addItem("🌍 Seleccionar décimo partido", "uiSeleccionarDecimoPartido")
     .addItem("⚽ Capturar marcador décimo partido", "uiCapturarMarcadorDecimoPartido")
     .addItem("🗑️ Quitar décimo partido", "quitarDecimoPartido")
+    .addSeparator()
+    .addItem("🖨️ Actualizar hoja de impresión", "actualizarHojaImpresion")
     .addSeparator()
     .addItem("🗓️ Programar Sync por calendario (hoy/mañana)", "programarSyncPorCalendario")
     .addItem("🧹 Borrar triggers de Sync", "desactivarAutoSyncMarcadores")
@@ -2125,6 +2128,64 @@ function getDecimoPartidoPorJornada_(jornada) {
   }
   
   return null;
+}
+
+/***************
+ * ACTUALIZAR HOJA DE IMPRESIÓN
+ * Llena automáticamente la hoja PRINT con los 10 partidos
+ ***************/
+function actualizarHojaImpresion() {
+  const ss = SpreadsheetApp.getActive();
+  const jornada = Number(getConfig_("JornadaActual")) || 1;
+  
+  // Obtener o crear hoja PRINT
+  let shPrint = ss.getSheetByName(SHEETS.PRINT);
+  if (!shPrint) {
+    shPrint = ss.insertSheet(SHEETS.PRINT);
+  }
+  
+  // Obtener partidos de Liga MX
+  const partidosLigaMX = getPartidosPorJornada_(jornada);
+  
+  // Obtener décimo partido si existe
+  const decimoPartido = getDecimoPartidoPorJornada_(jornada);
+  
+  // Combinar partidos (máximo 10)
+  const todosPartidos = [];
+  
+  // Agregar partidos de Liga MX (máximo 9)
+  for (let i = 0; i < Math.min(9, partidosLigaMX.length); i++) {
+    todosPartidos.push({
+      local: partidosLigaMX[i].local,
+      visitante: partidosLigaMX[i].visitante
+    });
+  }
+  
+  // Agregar décimo partido si existe
+  if (decimoPartido && decimoPartido.local && decimoPartido.visitante) {
+    todosPartidos.push({
+      local: decimoPartido.local,
+      visitante: decimoPartido.visitante
+    });
+  }
+  
+  // Rellenar con espacios vacíos si hay menos de 10 partidos
+  while (todosPartidos.length < 10) {
+    todosPartidos.push({ local: "", visitante: "" });
+  }
+  
+  // Llenar primera sección: C4:C13 (locales) y E4:E13 (visitantes)
+  const locales1 = todosPartidos.map(p => [p.local]);
+  const visitantes1 = todosPartidos.map(p => [p.visitante]);
+  
+  shPrint.getRange("C4:C13").setValues(locales1);
+  shPrint.getRange("E4:E13").setValues(visitantes1);
+  
+  // Llenar segunda sección: C15:C24 (locales) y E15:E24 (visitantes)
+  shPrint.getRange("C15:C24").setValues(locales1);
+  shPrint.getRange("E15:E24").setValues(visitantes1);
+  
+  SpreadsheetApp.getUi().alert(`✅ Hoja de impresión actualizada\n\n${todosPartidos.filter(p => p.local).length} partidos cargados para la jornada ${jornada}.`);
 }
 
 
