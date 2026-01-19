@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Demo - Décimo Partido</title>
+  <style>
+    :root{
+      --bg:#0f1220;
+      --card:#171a2f;
+      --line:#2a2e52;
+      --accent:#7c9cff;
+      --ok:#35d49a;
+      --bad:#ff6b6b;
+      --txt:#e9ecff;
+    }
+    body{
+      margin:0;
+      padding:20px;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:linear-gradient(180deg,#0c0f1d,#12152b);
+      color:var(--txt);
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      margin-bottom:14px;
+      max-width:600px;
+    }
+    .card.decimo{
+      border:2px solid #7c9cff;
+      background:rgba(124,156,255,.05);
+    }
+    .badge{
+      background:#7c9cff;
+      color:#fff;
+      padding:4px 8px;
+      border-radius:6px;
+      font-size:12px;
+      font-weight:900;
+      display:inline-block;
+      margin-bottom:6px;
+    }
+    .matchHead{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .team{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .logo{
+      width:32px;
+      height:32px;
+      border-radius:50%;
+      background:#0c0f1d;
+      border:1px solid var(--line);
+      object-fit:contain;
+    }
+    .vs{
+      opacity:.8;
+      font-weight:800;
+    }
+    h2{
+      margin:0 0 10px 0;
+    }
+    .small{
+      opacity:.85;
+      font-size:13px;
+    }
+    .ok{
+      color:var(--ok);
+    }
+  </style>
+</head>
+<body>
+  <h1>🌍 Demo: Décimo Partido Opcional</h1>
+  <p style="opacity:0.8;max-width:600px">Esta es una demostración de cómo se verá el décimo partido opcional en la interfaz de la quiniela.</p>
+
+  <h2 style="margin-top:30px">Partido Regular (Liga MX)</h2>
+  <div class="card">
+    <div class="matchHead">
+      <div class="team">
+        <img class="logo" src="https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/1947.png" alt="América">
+        <span><strong>América</strong></span>
+      </div>
+      <div class="vs">vs</div>
+      <div class="team">
+        <span><strong>Guadalajara</strong></span>
+        <img class="logo" src="https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/1948.png" alt="Chivas">
+      </div>
+    </div>
+    <div class="small">Jan 25, 2026 8:00 PM</div>
+    <div class="small ok">✅ Abierto</div>
+  </div>
+
+  <h2 style="margin-top:30px">Décimo Partido - La Liga</h2>
+  <div class="card decimo">
+    <div class="badge">🌍 PARTIDO EXTRA - LALIGA</div>
+    <div class="matchHead">
+      <div class="team">
+        <img class="logo" src="https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/86.png" alt="Real Madrid">
+        <span><strong>Real Madrid</strong></span>
+      </div>
+      <div class="vs">vs</div>
+      <div class="team">
+        <span><strong>Barcelona</strong></span>
+        <img class="logo" src="https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/83.png" alt="Barcelona">
+      </div>
+    </div>
+    <div class="small">Jan 26, 2026 3:00 PM</div>
+    <div class="small ok">✅ Abierto</div>
+  </div>
+
+  <h2 style="margin-top:30px">Décimo Partido - Premier League</h2>
+  <div class="card decimo">
+    <div class="badge">🌍 PARTIDO EXTRA - PREMIER</div>
+    <div class="matchHead">
+      <div class="team">
+        <img class="logo" src="https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/382.png" alt="Manchester City">
+        <span><strong>Manchester City</strong></span>
+      </div>
+      <div class="vs">vs</div>
+      <div class="team">
+        <span><strong>Liverpool</strong></span>
+        <img class="logo" src="https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/364.png" alt="Liverpool">
+      </div>
+    </div>
+    <div class="small">Jan 27, 2026 12:30 PM</div>
+    <div class="small ok">✅ Abierto</div>
+  </div>
+
+  <div style="margin-top:40px;padding:20px;background:rgba(124,156,255,.1);border-radius:12px;max-width:600px">
+    <h3 style="margin-top:0">Características del Décimo Partido:</h3>
+    <ul style="line-height:1.8">
+      <li><strong>Borde azul distintivo</strong> - Se destaca visualmente del resto de partidos</li>
+      <li><strong>Badge de liga</strong> - Muestra claramente si es La Liga o Premier League</li>
+      <li><strong>Escudos oficiales</strong> - URLs de ESPN para máxima calidad</li>
+      <li><strong>Misma funcionalidad</strong> - Los jugadores hacen sus picks igual que con partidos Liga MX</li>
+      <li><strong>Opcional</strong> - El administrador decide si incluirlo o no por jornada</li>
+    </ul>
+  </div>
+</body>
+</html>
