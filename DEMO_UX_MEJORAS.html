@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Demo - Campos Faltantes y Mensaje de Éxito</title>
+  <style>
+    :root{
+      --bg:#0f1220;
+      --card:#171a2f;
+      --line:#2a2e52;
+      --accent:#7c9cff;
+      --ok:#35d49a;
+      --bad:#ff6b6b;
+      --txt:#e9ecff;
+    }
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:linear-gradient(180deg,#0c0f1d,#12152b);
+      color:var(--txt);
+      padding:20px;
+    }
+    .wrap{max-width:980px;margin:0 auto;padding:16px}
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      margin-bottom:14px;
+    }
+    h1,h2,h3{margin:.2em 0 .6em 0}
+    .small{opacity:.85;font-size:13px}
+    input,select,button{
+      width:100%;
+      padding:12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#0c0f1d;
+      color:var(--txt);
+      font-size:16px;
+      box-sizing:border-box;
+      transition:all 0.2s ease;
+    }
+    input:focus,select:focus{
+      outline:none;
+      border-color:var(--accent);
+      box-shadow:0 0 0 3px rgba(124,156,255,0.2);
+    }
+    button{
+      background:linear-gradient(180deg,#6f8cff,#5a74ff);
+      border:none;
+      font-weight:800;
+      cursor:pointer;
+    }
+    button:active{
+      transform:scale(0.98);
+      opacity:0.9;
+    }
+    .ok{color:var(--ok)}
+    .bad{color:var(--bad)}
+    
+    /* Campo faltante - marcado en rojo */
+    .field-missing{
+      border:2px solid var(--bad) !important;
+      animation:shake 0.3s ease;
+    }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+    
+    .twoCols{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+    }
+    .miniCard{
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px;
+      background:rgba(255,255,255,.03);
+    }
+    .miniTitle{font-weight:900;margin-bottom:8px}
+    
+    .demo-section{
+      margin-bottom:40px;
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎨 Demo: Nuevas Mejoras de UX</h1>
+  
+  <div class="demo-section">
+    <h2>1️⃣ Mensaje de Éxito Motivador</h2>
+    <div class="card">
+      <div id="successMsg" class="ok" style="font-size:18px;font-weight:900">
+        🎉 ¡Tu quiniela ha sido guardada, suerte!!!
+      </div>
+      <div class="small" style="margin-top:6px">
+        Guardado: Entry 1 (5) · Entry 2 (3)
+      </div>
+      <div class="small">Bloqueados por lock: 2</div>
+    </div>
+  </div>
+  
+  <div class="demo-section">
+    <h2>2️⃣ Campos Faltantes Resaltados en Rojo</h2>
+    <p class="small">Los campos sin llenar se marcan en rojo con animación de sacudida:</p>
+    
+    <div class="card">
+      <div class="twoCols">
+        <div class="miniCard">
+          <div class="miniTitle">Pronóstico 1</div>
+          <select class="field-missing">
+            <option value="">Pick</option>
+            <option value="L">Local</option>
+            <option value="E">Empate</option>
+            <option value="V">Visitante</option>
+          </select>
+          <input placeholder="Marcador (ej. 2-1)" style="margin-top:8px">
+        </div>
+        
+        <div class="miniCard">
+          <div class="miniTitle">Pronóstico 2</div>
+          <select>
+            <option value="">Pick</option>
+            <option value="L" selected>Local</option>
+            <option value="E">Empate</option>
+            <option value="V">Visitante</option>
+          </select>
+          <input value="2-1" placeholder="Marcador (ej. 2-1)" style="margin-top:8px">
+        </div>
+      </div>
+      
+      <div style="margin-top:12px">
+        <span class="bad">⛔ Campos en rojo: falta seleccionar pick en Entry 1</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="demo-section">
+    <h2>3️⃣ Comportamiento del Sistema</h2>
+    <div class="card">
+      <h3 style="color:var(--ok)">✅ Funcionalidades:</h3>
+      <ul>
+        <li>Los campos vacíos se resaltan en rojo con borde de 2px</li>
+        <li>Animación de sacudida para llamar la atención</li>
+        <li>Auto-scroll al primer campo faltante</li>
+        <li>Los campos se limpian al guardar exitosamente</li>
+        <li>Mensaje motivador: "🎉 ¡Tu quiniela ha sido guardada, suerte!!!"</li>
+        <li>Detalles de guardado por Entry</li>
+      </ul>
+      
+      <h3 style="color:var(--accent); margin-top:20px">📝 Casos de uso:</h3>
+      <ul>
+        <li><strong>Sin picks:</strong> Todos los campos se marcan en rojo</li>
+        <li><strong>Picks parciales:</strong> Solo los vacíos se marcan en rojo</li>
+        <li><strong>Todos completos:</strong> No se marca nada, mensaje de éxito</li>
+        <li><strong>Guardado exitoso:</strong> Se limpian las marcas rojas</li>
+      </ul>
+    </div>
+  </div>
+  
+  <div class="demo-section">
+    <h2>4️⃣ Comparación Antes/Después</h2>
+    <div class="card">
+      <h3 style="color:var(--bad)">❌ Antes:</h3>
+      <div style="margin-left:20px">
+        <span class="ok">✅ Guardado: Entry 1 (5) · Entry 2 (3)</span><br>
+        <span class="small">Bloqueados por lock: 2</span>
+      </div>
+      
+      <h3 style="color:var(--ok); margin-top:20px">✅ Ahora:</h3>
+      <div style="margin-left:20px">
+        <span class="ok" style="font-size:18px;font-weight:900">🎉 ¡Tu quiniela ha sido guardada, suerte!!!</span><br>
+        <span class="small" style="margin-top:6px; display:block">Guardado: Entry 1 (5) · Entry 2 (3)</span>
+        <span class="small">Bloqueados por lock: 2</span>
+      </div>
+    </div>
+  </div>
+  
+  <button onclick="alert('Esta es una demo estática. La funcionalidad real está en Index.html')">
+    Ver Funcionalidad en Acción
+  </button>
+</div>
+
+<script>
+  // Demo: animar el campo faltante cada 3 segundos
+  setInterval(() => {
+    const field = document.querySelector('.field-missing');
+    if(field){
+      field.classList.remove('field-missing');
+      setTimeout(() => field.classList.add('field-missing'), 10);
+    }
+  }, 3000);
+</script>
+</body>
+</html>
