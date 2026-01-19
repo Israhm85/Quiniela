@@ -230,11 +230,40 @@
     }
     
     .checkbox-cell input[type="checkbox"] {
-      width: 22px;
-      height: 22px;
+      width: 24px;
+      height: 24px;
       cursor: pointer;
-      accent-color: var(--accent);
       margin: 0;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      border: 2px solid var(--line);
+      border-radius: 6px;
+      background: rgba(255,255,255,0.05);
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    
+    .checkbox-cell input[type="checkbox"]:hover {
+      border-color: var(--accent);
+      background: rgba(124,156,255,0.1);
+    }
+    
+    .checkbox-cell input[type="checkbox"]:checked {
+      background: linear-gradient(135deg, #6f8cff, #5a74ff);
+      border-color: #5a74ff;
+      box-shadow: 0 0 0 3px rgba(124,156,255,0.3);
+    }
+    
+    .checkbox-cell input[type="checkbox"]:checked::after {
+      content: '✓';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
     }
     
     .checkbox-cell input[type="checkbox"]:disabled {
