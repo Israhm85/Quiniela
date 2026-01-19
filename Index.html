@@ -962,6 +962,8 @@ function submitAll(){
       picks2: picks2
     });
 }
+
+function loadPrizePoolInfo(){
   google.script.run.withSuccessHandler(r=>{
     if(!r || !r.ok) return;
     
@@ -1122,6 +1124,7 @@ window.openTabla = openTabla;
 window.loadTabla = loadTabla;
 window.loadTransparencia = loadTransparencia;
 window.handleCheckboxChange = handleCheckboxChange;
+window.loadPrizePoolInfo = loadPrizePoolInfo;
 
 /* ---------- AUTO ---------- */
 window.onload = bootstrap;
