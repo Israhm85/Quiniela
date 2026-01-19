@@ -1114,6 +1114,15 @@ function loadTransparencia(){
   }).api_getTransparenciaPicks(SESSION.jornada);
 }
 
+/* ---------- EXPONER FUNCIONES AL ÁMBITO GLOBAL ---------- */
+// Necesario para que onclick handlers puedan acceder a estas funciones
+window.register = register;
+window.submitAll = submitAll;
+window.openTabla = openTabla;
+window.loadTabla = loadTabla;
+window.loadTransparencia = loadTransparencia;
+window.handleCheckboxChange = handleCheckboxChange;
+
 /* ---------- AUTO ---------- */
 window.onload = bootstrap;
 </script>
