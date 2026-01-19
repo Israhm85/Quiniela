@@ -2196,9 +2196,11 @@ function actualizarHojaImpresion() {
   const destinos = [
     "G1:K22",   // Primera copia
     "M1:Q22",   // Segunda copia
-    "A24:E45",  // Tercera copia
-    "G24:K45",  // Cuarta copia
-    "M24:Q45"   // Quinta copia
+    "S1:W22",   // Tercera copia (nueva)
+    "A24:E45",  // Cuarta copia
+    "G24:K45",  // Quinta copia
+    "M24:Q45",  // Sexta copia
+    "S24:W45"   // Séptima copia (nueva)
   ];
   
   // Copiar a cada destino
@@ -2210,7 +2212,7 @@ function actualizarHojaImpresion() {
     rangoDest.setFontSizes(fontSizes);
   }
   
-  SpreadsheetApp.getUi().alert(`✅ Hoja de impresión actualizada\n\n${todosPartidos.filter(p => p.local).length} partidos cargados para la jornada ${jornada}.\n\nSe crearon 6 copias (1 original + 5 copias) del formato.`);
+  SpreadsheetApp.getUi().alert(`✅ Hoja de impresión actualizada\n\n${todosPartidos.filter(p => p.local).length} partidos cargados para la jornada ${jornada}.\n\nSe crearon 8 copias (1 original + 7 copias) del formato.`);
 }
 
 
