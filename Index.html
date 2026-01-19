@@ -148,6 +148,23 @@ let SESSION = { token:null, jornada:null, lockMinutes:10, partidos:[] };
 
 function esc(s){return String(s||"").replace(/[&<>"]/g,m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[m]))}
 
+/* ---------- TOKEN VALIDATION ---------- */
+function validateTokenAndBootstrap(token){
+  google.script.run
+    .withSuccessHandler(loginR=>{
+      if(!loginR || !loginR.ok){
+        document.getElementById("regMsg").innerHTML = `<span class="bad">Error al validar: ${esc(loginR?.error || "desconocido")}</span>`;
+        return;
+      }
+      document.getElementById("regMsg").innerHTML = `<span class="ok">✅ Registro exitoso. Cargando predicciones...</span>`;
+      bootstrap();
+    })
+    .withFailureHandler(err=>{
+      document.getElementById("regMsg").innerHTML = `<span class="bad">Error de conexión: ${esc(err?.message || "intenta de nuevo")}</span>`;
+    })
+    .api_loginByToken(token);
+}
+
 /* ---------- REGISTRO ---------- */
 function register(){
   const nombre = document.getElementById("regNombre").value.trim();
@@ -155,15 +172,20 @@ function register(){
 
   document.getElementById("regMsg").innerHTML = "Registrando…";
 
-  google.script.run.withSuccessHandler(r=>{
-    if(!r.ok){
-      document.getElementById("regMsg").innerHTML = `<span class="bad">${esc(r.error)}</span>`;
-      return;
-    }
-    SESSION.token = r.token;
-    localStorage.setItem("q_token", r.token);
-    bootstrap();
-  }).api_register(nombre);
+  google.script.run
+    .withSuccessHandler(r=>{
+      if(!r.ok){
+        document.getElementById("regMsg").innerHTML = `<span class="bad">${esc(r.error)}</span>`;
+        return;
+      }
+      SESSION.token = r.token;
+      localStorage.setItem("q_token", r.token);
+      validateTokenAndBootstrap(r.token);
+    })
+    .withFailureHandler(err=>{
+      document.getElementById("regMsg").innerHTML = `<span class="bad">Error de conexión: ${esc(err?.message || "intenta de nuevo")}</span>`;
+    })
+    .api_register(nombre);
 }
 
 /* ---------- BOOTSTRAP ---------- */
@@ -171,32 +193,87 @@ function bootstrap(){
   const t = localStorage.getItem("q_token");
   if(t) SESSION.token = t;
 
-  google.script.run.withSuccessHandler(r=>{
-    if(!r || !r.ok){
-      document.getElementById("regMsg").innerHTML = `<span class="bad">No pude cargar la jornada.</span>`;
-      return;
-    }
+  google.script.run
+    .withSuccessHandler(r=>{
+      if(!r || !r.ok){
+        console.error("api_bootstrap failed:", r);
+        document.getElementById("regMsg").innerHTML = `<span class="bad">No pude cargar la jornada.</span>`;
+        return;
+      }
 
-    SESSION.jornada = r.jornada;
-    SESSION.lockMinutes = r.lockMinutes || 10;
-    SESSION.partidos = r.partidos || [];
+      console.log("Bootstrap data:", r);
+      SESSION.jornada = r.jornada;
+      SESSION.lockMinutes = r.lockMinutes || 10;
+      SESSION.partidos = r.partidos || [];
 
-    // si no hay token, que se registre
-    if(!SESSION.token){
-      document.getElementById("registerCard").style.display = "block";
-      document.getElementById("formCard").style.display = "none";
-      return;
-    }
+      console.log("Partidos loaded:", SESSION.partidos.length);
 
-    document.getElementById("registerCard").style.display = "none";
-    document.getElementById("formCard").style.display = "block";
-    document.getElementById("jorTitle").innerHTML = `Jornada ${r.jornada}`;
+      // si no hay token, que se registre
+      if(!SESSION.token){
+        document.getElementById("registerCard").style.display = "block";
+        document.getElementById("formCard").style.display = "none";
+        return;
+      }
 
-    renderForm();
-  }).api_bootstrap();
+      document.getElementById("registerCard").style.display = "none";
+      document.getElementById("formCard").style.display = "block";
+      document.getElementById("jorTitle").innerHTML = `Jornada ${r.jornada}`;
+
+      renderForm();
+      loadMyPicks();
+    })
+    .withFailureHandler(err=>{
+      console.error("api_bootstrap error:", err);
+      document.getElementById("regMsg").innerHTML = `<span class="bad">Error al cargar: ${esc(err?.message || "intenta recargar la página")}</span>`;
+    })
+    .api_bootstrap();
 }
 
 /* ---------- FORMULARIO ---------- */
+function generateMatchKey(jornada, local, visit){
+  return `${jornada}|${local}`.toLowerCase() + `|${visit}`.toLowerCase();
+}
+
+function loadMyPicks(){
+  if(!SESSION.token || !SESSION.jornada) return;
+
+  // Load picks for both entries
+  loadPicksForEntry(1);
+  loadPicksForEntry(2);
+}
+
+function loadPicksForEntry(entry){
+  google.script.run
+    .withSuccessHandler(r=>{
+      if(r && r.ok && r.picks){
+        fillPicksInForm(r.picks, entry);
+      } else {
+        console.warn(`No picks data for entry ${entry}:`, r);
+      }
+    })
+    .withFailureHandler(err=>{
+      console.error(`Error loading picks entry ${entry}:`, err);
+    })
+    .api_getMyPicks(SESSION.token, SESSION.jornada, entry);
+}
+
+function fillPicksInForm(picks, entry){
+  SESSION.partidos.forEach((p, idx)=>{
+    const key = generateMatchKey(SESSION.jornada, p.local, p.visit);
+    const saved = picks[key];
+    if(!saved) return;
+
+    const pickEl = document.getElementById(`pick_${idx}_${entry}`);
+    const marcEl = document.getElementById(`marc_${idx}_${entry}`);
+
+    if(pickEl && saved.pick) pickEl.value = saved.pick;
+    // Validate marcador values are present (can be numbers or numeric strings)
+    if(marcEl && saved.gl != null && saved.gv != null && String(saved.gl).trim() !== "" && String(saved.gv).trim() !== ""){
+      marcEl.value = `${saved.gl}-${saved.gv}`;
+    }
+  });
+}
+
 function renderForm(){
   const box = document.getElementById("picksBox");
   if(!SESSION.partidos.length){
