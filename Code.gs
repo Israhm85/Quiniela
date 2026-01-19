@@ -542,8 +542,16 @@ function doGet(e) {
   const tpl = HtmlService.createTemplateFromFile("Index");
   tpl.urlToken = (e?.parameter?.t || "").toString().trim();
   return tpl.evaluate()
-    .setTitle(WEBAPP.TITLE)
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    .setTitle("⚽ Quiniela Liga MX - Participa Ahora")
+    .setMetaTag("description", "Haz tus pronósticos de la Liga MX y compite por premios. Sistema de doble entrada con premio mayor y menor.")
+    .setMetaTag("keywords", "quiniela, liga mx, futbol, pronosticos, predicciones")
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+    .addMetaTag("og:title", "⚽ Quiniela Liga MX - Participa Ahora")
+    .addMetaTag("og:description", "Haz tus pronósticos de la Liga MX. 🏆 Premio Mayor para más aciertos. 🥈 Premio Menor por marcadores exactos. ¡2 pronósticos por jugador!")
+    .addMetaTag("og:type", "website")
+    .addMetaTag("twitter:card", "summary")
+    .addMetaTag("twitter:title", "⚽ Quiniela Liga MX")
+    .addMetaTag("twitter:description", "Haz tus pronósticos de la Liga MX y compite por premios.");
 }
 
 function api_bootstrap() {
