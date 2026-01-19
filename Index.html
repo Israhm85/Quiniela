@@ -39,21 +39,72 @@
       background:#0c0f1d;
       color:var(--txt);
       font-size:16px;
+      box-sizing:border-box;
+      -webkit-appearance:none;
+      -moz-appearance:none;
+      appearance:none;
+      transition:all 0.2s ease;
+    }
+    input:focus,select:focus{
+      outline:none;
+      border-color:var(--accent);
+      box-shadow:0 0 0 3px rgba(124,156,255,0.2);
+    }
+    input:disabled,select:disabled{
+      opacity:0.6;
+      cursor:not-allowed;
     }
     button{
       background:linear-gradient(180deg,#6f8cff,#5a74ff);
       border:none;
       font-weight:800;
       cursor:pointer;
+      touch-action:manipulation; /* Prevents double-tap zoom on mobile */
+    }
+    button:active{
+      transform:scale(0.98);
+      opacity:0.9;
+    }
+    button:disabled{
+      opacity:0.5;
+      cursor:not-allowed;
     }
     button.secondary{
       background:#0c0f1d;
       border:1px solid var(--line);
       font-weight:700;
     }
-    table{width:100%;border-collapse:collapse;font-size:14px}
-    th,td{padding:8px;border-bottom:1px solid var(--line)}
-    th{opacity:.8;text-align:left}
+    button.secondary:active{
+      background:rgba(255,255,255,0.05);
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:14px;
+      min-width:100%;
+    }
+    th,td{
+      padding:8px;
+      border-bottom:1px solid var(--line);
+      text-align:left;
+    }
+    th{
+      opacity:.8;
+      font-weight:700;
+      position:sticky;
+      top:0;
+      background:var(--card);
+      z-index:1;
+    }
+    td{
+      vertical-align:middle;
+    }
+    /* Responsive table wrapper */
+    .table-wrapper{
+      overflow-x:auto;
+      -webkit-overflow-scrolling:touch;
+      margin:10px 0;
+    }
     .center{text-align:center}
     .ok{color:var(--ok)}
     .bad{color:var(--bad)}
@@ -91,9 +142,142 @@
       opacity:.6;
       filter:grayscale(1);
     }
+    
+    /* ===== RESPONSIVE DESIGN ===== */
+    
+    /* Tablets and smaller desktops (768px - 1024px) */
+    @media(max-width:1024px){
+      .wrap{max-width:100%;padding:20px}
+      h1{font-size:1.8em}
+      h2{font-size:1.5em}
+    }
+    
+    /* Tablets (700px - 768px) */
+    @media(max-width:768px){
+      .wrap{padding:16px}
+      h1{font-size:1.6em}
+      h2{font-size:1.3em}
+      .team span{max-width:160px;}
+      table{font-size:13px}
+      th,td{padding:6px}
+    }
+    
+    /* Mobile devices (below 700px) */
     @media(max-width:700px){
       .twoCols{grid-template-columns:1fr;}
       .team span{max-width:140px;}
+      .wrap{padding:12px}
+      h1{font-size:1.5em;margin:.2em 0 .4em 0}
+      h2{font-size:1.2em;margin:.2em 0 .4em 0}
+      h3{font-size:1.1em}
+      
+      /* Touch-friendly buttons and inputs */
+      input,select,button{
+        padding:14px;
+        font-size:16px;
+        min-height:48px; /* Better touch target */
+      }
+      
+      button{
+        margin-top:8px;
+        font-size:17px;
+      }
+      
+      /* Card spacing */
+      .card{
+        padding:12px;
+        margin-bottom:12px;
+        border-radius:12px;
+      }
+      
+      .miniCard{
+        padding:8px;
+        border-radius:10px;
+      }
+      
+      /* Match header adjustments */
+      .matchHead{
+        flex-direction:column;
+        gap:8px;
+        text-align:center;
+      }
+      
+      .team{
+        justify-content:center;
+        width:100%;
+      }
+      
+      .logo{
+        width:32px;
+        height:32px; /* Larger logos on mobile */
+      }
+      
+      .vs{
+        font-size:14px;
+        margin:4px 0;
+      }
+      
+      /* Table responsive */
+      table{
+        font-size:12px;
+        display:block;
+        overflow-x:auto;
+        -webkit-overflow-scrolling:touch;
+      }
+      
+      th,td{
+        padding:8px 4px;
+        white-space:nowrap;
+      }
+      
+      /* Small text legibility */
+      .small{
+        font-size:14px;
+        line-height:1.4;
+      }
+      
+      .miniTitle{
+        font-size:15px;
+      }
+    }
+    
+    /* Extra small devices (below 400px) */
+    @media(max-width:400px){
+      .wrap{padding:10px}
+      h1{font-size:1.3em}
+      h2{font-size:1.1em}
+      
+      .team span{
+        max-width:100px;
+        font-size:14px;
+      }
+      
+      .logo{
+        width:28px;
+        height:28px;
+      }
+      
+      input,select,button{
+        padding:12px;
+        font-size:15px;
+      }
+      
+      .card{
+        padding:10px;
+        border-radius:10px;
+      }
+      
+      table{font-size:11px}
+      th,td{padding:6px 2px}
+    }
+    
+    /* Landscape orientation on mobile */
+    @media(max-height:500px) and (orientation:landscape){
+      .wrap{padding:8px}
+      h1{font-size:1.2em;margin:.1em 0 .3em 0}
+      h2{font-size:1em;margin:.1em 0 .3em 0}
+      .card{padding:8px;margin-bottom:8px}
+      input,select,button{padding:10px}
     }
   </style>
 </head>
