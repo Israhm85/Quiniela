@@ -894,65 +894,53 @@ function submitAll(){
     picks2.push({ local: p.local, visit: p.visit, pick: pick2, gl: "", gv: "" });
   });
 
-  // Validación: Verificar que hay al menos un pick válido
+  // Validación: TODOS los partidos deben tener pick (no se permite guardar parciales)
   const validPicks1 = picks1.filter(p => p.pick && VALID_PICK_VALUES.includes(p.pick));
   const validPicks2 = picks2.filter(p => p.pick && VALID_PICK_VALUES.includes(p.pick));
-
-  if(validPicks1.length === 0 && validPicks2.length === 0){
-    saveMsg.innerHTML = `<span class="bad">⛔ No hay picks para guardar. Selecciona al menos un resultado.</span>`;
-    console.warn("No se encontraron picks válidos. Entry 1:", validPicks1.length, "Entry 2:", validPicks2.length);
-    
-    // Marcar filas sin picks en rojo
-    partidos.forEach((p, idx) => {
-      const row1 = document.querySelector(`tr[data-idx="${idx}"][data-entry="1"]`);
-      const row2 = document.querySelector(`tr[data-idx="${idx}"][data-entry="2"]`);
-      
-      if(row1 && !picks1[idx].pick) row1.classList.add('pick-missing');
-      if(row2 && !picks2[idx].pick) row2.classList.add('pick-missing');
+  
+  // Contar partidos no locked
+  const unlockedCount = partidos.filter(p => !p.locked).length;
+  
+  // Verificar que ambas entries tengan TODOS los partidos con pick
+  let missingInEntry1 = [];
+  let missingInEntry2 = [];
+  
+  partidos.forEach((p, idx) => {
+    if(!p.locked && !picks1[idx].pick){
+      missingInEntry1.push(idx);
+    }
+    if(!p.locked && !picks2[idx].pick){
+      missingInEntry2.push(idx);
+    }
+  });
+  
+  // Si faltan picks, marcar en rojo y mostrar error
+  if(missingInEntry1.length > 0 || missingInEntry2.length > 0){
+    // Marcar filas faltantes en rojo
+    missingInEntry1.forEach(idx => {
+      const row = document.querySelector(`tr[data-idx="${idx}"][data-entry="1"]`);
+      if(row) row.classList.add('pick-missing');
     });
+    
+    missingInEntry2.forEach(idx => {
+      const row = document.querySelector(`tr[data-idx="${idx}"][data-entry="2"]`);
+      if(row) row.classList.add('pick-missing');
+    });
+    
+    // Mensaje de error
+    const totalMissing = missingInEntry1.length + missingInEntry2.length;
+    saveMsg.innerHTML = `<span class="bad">⛔ Faltan ${totalMissing} pick${totalMissing > 1 ? 's' : ''}. Debes completar TODOS los partidos en ambas entradas antes de guardar.</span>`;
     
     // Scroll al primer faltante
     const firstMissing = document.querySelector('.pick-missing');
     if(firstMissing){
       firstMissing.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Focus en el primer checkbox de la fila
+      const firstCheckbox = firstMissing.querySelector('input[type="checkbox"]:not(:disabled)');
+      if(firstCheckbox) firstCheckbox.focus();
     }
     
     return;
-  }
-
-  // Marcar filas incompletas si hay picks parciales
-  const hasAnyPick1 = validPicks1.length > 0;
-  const hasAnyPick2 = validPicks2.length > 0;
-  
-  if(hasAnyPick1){
-    partidos.forEach((p, idx) => {
-      if(!picks1[idx].pick){
-        const row = document.querySelector(`tr[data-idx="${idx}"][data-entry="1"]`);
-        if(row && !row.classList.contains('locked')){
-          row.classList.add('pick-missing');
-        }
-      }
-    });
-  }
-  
-  if(hasAnyPick2){
-    partidos.forEach((p, idx) => {
-      if(!picks2[idx].pick){
-        const row = document.querySelector(`tr[data-idx="${idx}"][data-entry="2"]`);
-        if(row && !row.classList.contains('locked')){
-          row.classList.add('pick-missing');
-        }
-      }
-    });
-  }
-  
-  // Verificar si hay campos faltantes marcados
-  const hasMissingFields = document.querySelectorAll('.pick-missing').length > 0;
-  if(hasMissingFields){
-    const firstMissing = document.querySelector('.pick-missing');
-    if(firstMissing){
-      firstMissing.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
   }
 
   // Enviar a API
