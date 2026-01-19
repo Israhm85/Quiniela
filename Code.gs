@@ -83,12 +83,15 @@ function setupInicial() {
     ["Admins", map["Admins"] ?? ""],
     ["JornadaCerrada", map["JornadaCerrada"] ?? "NO"],
     ["CostoEntry", map["CostoEntry"] ?? 50],
+    ["PorcentajeComision", map["PorcentajeComision"] ?? 20],
+    ["PorcentajePremioMenor", map["PorcentajePremioMenor"] ?? 15],
+    ["PorcentajePremioMayor", map["PorcentajePremioMayor"] ?? 85],
   ];
 
   if (shCfg.getLastRow() > 1) shCfg.getRange(2, 1, shCfg.getLastRow() - 1, 2).clearContent();
   shCfg.getRange(2, 1, defaults.length, 2).setValues(defaults);
 
-  SpreadsheetApp.getUi().alert("Setup listo ✅ (incluye ENTRY 2x1 + EQUIPOS logos + sistema de pagos).");
+  SpreadsheetApp.getUi().alert("Setup listo ✅ (incluye ENTRY 2x1 + EQUIPOS logos + sistema de pagos + % configurables).");
 }
 
 
@@ -637,11 +640,6 @@ function api_submit(payload) {
     // Jugador
     const player = findJugadorByToken_(token);
     if (!player) return { ok: false, error: "Sesión inválida. Vuelve a entrar con tu link." };
-    
-    // Verificar que haya pagado
-    if (!player.pagado) {
-      return { ok: false, error: "⛔ No puedes participar. Debes realizar el pago de inscripción primero." };
-    }
 
     const lockMinutes = Number(getConfig_("LockMinutes")) || 10;
 
@@ -786,6 +784,11 @@ function api_getPrizePool() {
   
   const costoEntry = Number(getConfig_("CostoEntry")) || 50;
   
+  // Obtener porcentajes configurables
+  const pctComision = Number(getConfig_("PorcentajeComision")) || 20;
+  const pctPremioMenor = Number(getConfig_("PorcentajePremioMenor")) || 15;
+  const pctPremioMayor = Number(getConfig_("PorcentajePremioMayor")) || 85;
+  
   // Contar jugadores que han pagado
   const rows = sh.getRange(2, 1, lr - 1, 6).getValues();
   let jugadoresPagados = 0;
@@ -798,13 +801,13 @@ function api_getPrizePool() {
     }
   }
   
-  // Calcular pool de premios
+  // Calcular pool de premios con porcentajes configurables
   const totalRecaudado = jugadoresPagados * costoEntry;
-  const comision = totalRecaudado * 0.20; // 20% comisión
-  const poolPremios = totalRecaudado * 0.80; // 80% para premios
+  const comision = totalRecaudado * (pctComision / 100);
+  const poolPremios = totalRecaudado * (1 - pctComision / 100);
   
-  const premioMenor = poolPremios * 0.15; // 15% del pool (12% del total)
-  const premioMayor = poolPremios * 0.85; // 85% del pool (68% del total)
+  const premioMenor = poolPremios * (pctPremioMenor / 100);
+  const premioMayor = poolPremios * (pctPremioMayor / 100);
   
   return {
     ok: true,
@@ -814,7 +817,12 @@ function api_getPrizePool() {
     comision,
     poolPremios,
     premioMayor: Math.floor(premioMayor),
-    premioMenor: Math.floor(premioMenor)
+    premioMenor: Math.floor(premioMenor),
+    porcentajes: {
+      comision: pctComision,
+      premioMenor: pctPremioMenor,
+      premioMayor: pctPremioMayor
+    }
   };
 }
 
