@@ -867,7 +867,10 @@ function api_getPremioMayor(jornadaOpt) {
   // 5) Todos los que tengan el máximo son ganadores (se reparte el premio)
   const winners = rows
     .filter(r => r.aciertos === maxAciertos)
-    .sort((a, b) => String(a.nombre).localeCompare(String(b.nombre)));
+    .sort((a, b) => {
+      if (a.id !== b.id) return a.id - b.id;
+      return a.entry - b.entry;
+    });
 
   return {
     ok: true,
