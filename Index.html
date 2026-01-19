@@ -8,16 +8,16 @@
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="⚽ Quiniela Liga MX - Participa Ahora">
-  <meta property="og:description" content="Haz tus pronósticos de la Liga MX. 🏆 Premio Mayor para más aciertos. 🥈 Premio Menor por marcadores exactos. ¡2 pronósticos por jugador!">
+  <meta property="og:description" content="Haz tus pronósticos de la Liga MX. 🏆 Premio Mayor para más aciertos. ¡2 pronósticos por jugador!">
   <meta property="og:site_name" content="Quiniela Liga MX">
   
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="⚽ Quiniela Liga MX - Participa Ahora">
-  <meta name="twitter:description" content="Haz tus pronósticos de la Liga MX. 🏆 Premio Mayor para más aciertos. 🥈 Premio Menor por marcadores exactos.">
+  <meta name="twitter:description" content="Haz tus pronósticos de la Liga MX. 🏆 Premio Mayor para más aciertos.">
   
   <!-- General Meta Tags -->
-  <meta name="description" content="Quiniela Liga MX - Haz tus pronósticos y compite por premios. Sistema de doble entrada con premio mayor y menor.">
+  <meta name="description" content="Quiniela Liga MX - Haz tus pronósticos y compite por premios. Sistema de doble entrada con premio mayor.">
   <meta name="keywords" content="quiniela, liga mx, futbol, pronosticos, predicciones">
 
   <style>
@@ -472,8 +472,7 @@
     <!-- INFO DE PREMIOS -->
     <div style="margin-top:12px;padding:12px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px">
       <div class="small" style="line-height:1.6">
-        <strong style="color:var(--ok)">🏆 Premio Mayor:</strong> <span id="premioMayorMonto" style="color:var(--ok)">$0</span> - Quien acierte más resultados (L/V/E). Si hay empate, se reparte.<br>
-        <strong style="color:var(--accent)">🥈 Premio Menor:</strong> <span id="premioMenorMonto" style="color:var(--accent)">$0</span> - Quien acierte más marcadores exactos. Sin empates (desempate: exactos → aciertos → primero en enviar).
+        <strong style="color:var(--ok)">🏆 Premio Mayor:</strong> <span id="premioMayorMonto" style="color:var(--ok)">$0</span> - Quien acierte más resultados (L/V/E). Si hay empate, se reparte.
       </div>
       <div id="prizePoolInfo" class="small" style="margin-top:8px;opacity:.7"></div>
     </div>
@@ -492,7 +491,6 @@
   <div class="card" id="tablaCard" style="display:none">
     <h2>📊 Resultados</h2>
     <div id="premioMayorBox"></div>
-    <div id="premioMenorBox"></div>
 
     <button class="secondary" style="margin-bottom:10px" onclick="loadTabla()">Ver tabla general</button>
     <button class="secondary" style="margin-bottom:10px" onclick="loadTransparencia()">👀 Ver todos los picks</button>
@@ -808,6 +806,12 @@ function renderForm(){
 
 /* ---------- CHECKBOX HANDLER ---------- */
 function handleCheckboxChange(idx, entry, value){
+  // Primero, asegurar que el checkbox clickeado esté marcado
+  const currentCheckbox = document.getElementById(`pick_${value}_${idx}_${entry}`);
+  if(currentCheckbox){
+    currentCheckbox.checked = true;
+  }
+  
   // Desmarcar los otros checkboxes del mismo partido y entry
   const otherValues = ['L', 'E', 'V'].filter(v => v !== value);
   
@@ -968,11 +972,9 @@ function loadPrizePoolInfo(){
     if(!r || !r.ok) return;
     
     const premioMayorEl = document.getElementById("premioMayorMonto");
-    const premioMenorEl = document.getElementById("premioMenorMonto");
     const infoEl = document.getElementById("prizePoolInfo");
     
     if(premioMayorEl) premioMayorEl.innerHTML = `$${r.premioMayor.toLocaleString()}`;
-    if(premioMenorEl) premioMenorEl.innerHTML = `$${r.premioMenor.toLocaleString()}`;
     
     if(infoEl && r.jugadoresPagados > 0){
       infoEl.innerHTML = `${r.jugadoresPagados} participante${r.jugadoresPagados > 1 ? 's' : ''} · Bolsa total: $${r.poolPremios.toLocaleString()}`;
@@ -986,7 +988,6 @@ function loadPrizePoolInfo(){
 function openTabla(){
   document.getElementById("tablaCard").style.display = "block";
   loadPremioMayor();
-  loadPremioMenor();
   loadTabla();
 }
 
@@ -1016,30 +1017,6 @@ function loadPremioMayor(){
       </div>
     `;
   }).api_getPremioMayor(SESSION.jornada);
-}
-
-function loadPremioMenor(){
-  const box = document.getElementById("premioMenorBox");
-  box.innerHTML = "";
-
-  google.script.run.withSuccessHandler(r=>{
-    if(!r || !r.ok){
-      box.innerHTML = `<div class="small bad">🥈 Premio menor: ${esc(r?.error || "No disponible (cierra la jornada)")}</div>`;
-      return;
-    }
-    if(!r.winner){
-      box.innerHTML = `<div class="small">🥈 Premio menor: (sin datos)</div>`;
-      return;
-    }
-    box.innerHTML = `
-      <div class="card" style="background:rgba(124,156,255,.1);border-color:#7c9cff;margin-bottom:10px">
-        🥈 <strong>Premio Menor - Marcadores Exactos</strong><br>
-        Ganador: <strong>${esc(r.winner.nombre)} (Entry ${esc(r.winner.entry)})</strong><br>
-        Exactos: <strong>${esc(r.winner.exactos)}</strong> · Aciertos: <strong>${esc(r.winner.aciertos)}</strong><br>
-        <div class="small" style="margin-top:6px;opacity:.9">Premio menor a quien tenga más aciertos en marcadores exactos. No hay empates.<br>Desempate: exactos → aciertos → primero en enviar.</div>
-      </div>
-    `;
-  }).api_getPremioMarcadorExactoPorEntry(SESSION.jornada);
 }
 
 function loadTabla(){
