@@ -552,23 +552,25 @@ function register(){
 
 /* ---------- BOOTSTRAP ---------- */
 function bootstrap(){
+  console.log("🚀 bootstrap() called, SESSION.token:", SESSION.token ? "present" : "missing");
   const t = localStorage.getItem("q_token");
   if(t) SESSION.token = t;
 
   google.script.run
     .withSuccessHandler(r=>{
+      console.log("✅ api_bootstrap success:", r);
       if(!r || !r.ok){
-        console.error("api_bootstrap failed:", r);
+        console.error("❌ api_bootstrap failed:", r);
         document.getElementById("regMsg").innerHTML = `<span class="bad">No pude cargar la jornada.</span>`;
         return;
       }
 
-      console.log("Bootstrap data:", r);
+      console.log("📊 Bootstrap data received:", r);
       SESSION.jornada = r.jornada;
       SESSION.lockMinutes = r.lockMinutes || 10;
       SESSION.partidos = r.partidos || [];
 
-      console.log("Partidos loaded:", SESSION.partidos.length);
+      console.log("📋 Partidos loaded:", SESSION.partidos.length);
       
       // Validación: Verificar que SESSION.partidos se llenó correctamente
       if(!SESSION.partidos || SESSION.partidos.length === 0){
@@ -581,21 +583,27 @@ function bootstrap(){
 
       // si no hay token, que se registre
       if(!SESSION.token){
+        console.log("ℹ️ No token found, showing registration");
         document.getElementById("registerCard").style.display = "block";
         document.getElementById("formCard").style.display = "none";
         return;
       }
 
+      console.log("✅ Token found, showing form");
       document.getElementById("registerCard").style.display = "none";
       document.getElementById("formCard").style.display = "block";
       document.getElementById("jorTitle").innerHTML = `Jornada ${r.jornada}`;
 
+      console.log("📝 Calling renderForm()");
       renderForm();
+      console.log("📥 Calling loadMyPicks()");
       loadMyPicks();
+      console.log("💰 Calling loadPrizePool()");
       loadPrizePool();
+      console.log("✅ bootstrap() completed successfully");
     })
     .withFailureHandler(err=>{
-      console.error("api_bootstrap error:", err);
+      console.error("❌ api_bootstrap error:", err);
       document.getElementById("regMsg").innerHTML = `<span class="bad">Error al cargar: ${esc(err?.message || "intenta recargar la página")}</span>`;
     })
     .api_bootstrap();
@@ -647,12 +655,21 @@ function fillPicksInForm(picks, entry){
 }
 
 function renderForm(){
+  console.log("📋 renderForm() called");
   const box = document.getElementById("picksBox");
+  if(!box){
+    console.error("❌ Element 'picksBox' not found");
+    return;
+  }
+  
   if(!SESSION.partidos || SESSION.partidos.length === 0){
+    console.error("❌ SESSION.partidos is empty:", SESSION.partidos);
     box.innerHTML = `<div class="small bad">No hay partidos cargados para esta jornada.</div>`;
     return;
   }
 
+  console.log("✅ Rendering form with", SESSION.partidos.length, "partidos");
+  
   // Tomar solo primeros 10 partidos (máximo)
   const partidos = SESSION.partidos.slice(0, 10);
 
@@ -778,11 +795,15 @@ function renderForm(){
     </div>
   `;
 
+  console.log("✅ Generated HTML, setting innerHTML");
   box.innerHTML = html;
+  console.log("✅ innerHTML set, loading picks");
   
   // Cargar picks guardados
   loadPicksForEntry(1);
   loadPicksForEntry(2);
+  
+  console.log("✅ renderForm() completed");
 }
 
 /* ---------- CHECKBOX HANDLER ---------- */
