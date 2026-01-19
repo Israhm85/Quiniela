@@ -21,31 +21,33 @@ La función llena los siguientes rangos en la hoja PRINT:
 
 **Copias Automáticas:**
 El rango completo A1:E22 se copia automáticamente a:
-1. `G1:K22` - Primera copia
-2. `M1:Q22` - Segunda copia
-3. `A24:E45` - Tercera copia
-4. `G24:K45` - Cuarta copia
-5. `M24:Q45` - Quinta copia
+1. `G1:K22` - Primera copia (columna F = gap)
+2. `M1:Q22` - Segunda copia (columna L = gap)
+3. `S1:W22` - Tercera copia (columna R = gap)
+4. `A24:E45` - Cuarta copia (fila inferior)
+5. `G24:K45` - Quinta copia (fila inferior)
+6. `M24:Q45` - Sexta copia (fila inferior)
+7. `S24:W45` - Séptima copia (fila inferior)
 
-**Total:** 6 instancias del formato (1 original + 5 copias)
+**Total:** 8 instancias del formato (1 original + 7 copias)
 
 ## Ejemplo de Resultado
 
 ```
-Columnas:  A    B         C    D           E  |  G    H         I    J           K  |  M    N    ...
-═══════════════════════════════════════════════════════════════════════════════════════════════
-Fila 1:    [------- Formato Original --------] | [------- Copia 1 --------] | [--- Copia 2 ---]
-Fila 2:         América        Guadalajara     |      América    Guadalajara|   América ...
-Fila 3:         Cruz Azul      Pumas          |      Cruz Azul   Pumas     |   Cruz Azul ...
+Columnas:  A    B         C    D           E  |  G    H    ...  K  |  M    N    ...  Q  |  S    T    ...  W
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+Fila 1:    [---- Original ----] | [--- Copia 1 ---] | [--- Copia 2 ---] | [--- Copia 3 ---]
+Fila 2:         América     Guadalajara   |   América  Guadalajara|   América  ...    |   América  ...
+Fila 3:         Cruz Azul   Pumas         |   Cruz Azul Pumas     |   Cruz Azul ...   |   Cruz Azul ...
 ...
-Fila 11:        Real Madrid    Barcelona       |      Real Madrid Barcelona |   Real Madrid...
-Fila 12:                                       |                            |
-Fila 13:        América        Guadalajara     |      América    Guadalajara|   América ...
+Fila 11:        Real Madrid Barcelona     |   Real Madrid Barcelona|   Real Madrid ... |   Real Madrid...
+Fila 12:                                  |                       |                   |
+Fila 13:        América     Guadalajara   |   América  Guadalajara|   América  ...    |   América  ...
 ...
-Fila 22:        Real Madrid    Barcelona       |      Real Madrid Barcelona |   Real Madrid...
+Fila 22:        Real Madrid Barcelona     |   Real Madrid Barcelona|   Real Madrid ... |   Real Madrid...
 
-Fila 24:   [------- Copia 3 --------]         | [------- Copia 4 --------] | [--- Copia 5 ---]
-Fila 25:        América        Guadalajara     |      América    Guadalajara|   América ...
+Fila 24:   [--- Copia 4 ---] | [--- Copia 5 ---] | [--- Copia 6 ---] | [--- Copia 7 ---]
+Fila 25:        América     Guadalajara   |   América  Guadalajara|   América  ...    |   América  ...
 ...
 ```
 
@@ -54,10 +56,10 @@ Fila 25:        América        Guadalajara     |      América    Guadalajara| 
 ✅ **Dinámico**: Se actualiza con la jornada actual (CONFIG → JornadaActual)
 ✅ **Incluye décimo partido**: Si está configurado, lo agrega automáticamente como partido #10
 ✅ **Auto-completado**: Si hay menos de 10 partidos, rellena con espacios vacíos
-✅ **6 copias idénticas**: Crea 1 original + 5 copias automáticas
+✅ **8 copias idénticas**: Crea 1 original + 7 copias automáticas
 ✅ **Preserva formato**: Copia colores de fondo, pesos de fuente y tamaños
 ✅ **Crea hoja si no existe**: Si la hoja PRINT no existe, la crea automáticamente
-✅ **Eficiente para imprimir**: Permite imprimir 6 quinielas en una sola hoja
+✅ **Eficiente para imprimir**: Permite imprimir 8 quinielas en una sola hoja
 
 ## Cuándo Ejecutar
 
@@ -78,9 +80,10 @@ La hoja PRINT debe tener un formato predefinido con:
 ## Layout de Impresión
 
 El diseño está optimizado para:
-- **3 copias horizontales** en la parte superior (columnas A-E, G-K, M-Q)
-- **3 copias horizontales** en la parte inferior (columnas A-E, G-K, M-Q)
-- Permite imprimir 6 quinielas en una sola página horizontal
+- **4 copias horizontales** en la parte superior (columnas A-E, G-K, M-Q, S-W)
+- **4 copias horizontales** en la parte inferior (columnas A-E, G-K, M-Q, S-W)
+- Columnas de gap: F, L, R (una columna entre cada sección)
+- Permite imprimir 8 quinielas en una sola página horizontal
 
 ## Notas Técnicas
 
@@ -102,6 +105,6 @@ Esta función es parte del sistema de décimo partido opcional y se integra perf
 ---
 
 **Implementado:** Commit 9eb3e75
-**Actualizado:** Commit e1318e5 (nuevos rangos y 5 copias automáticas)
+**Actualizado:** Commit e1318e5 (nuevos rangos y 5 copias automáticas), commit 388ade8 (2 copias adicionales)
 **Última actualización:** Enero 19, 2026
 
