@@ -1034,6 +1034,34 @@ function importarCalendarioESPN() {
         }
       }
     }
+    
+    // Try event name (e.g., "Liga MX - Jornada 4")
+    if (jornada === "" && (ev.name || ev.shortName)) {
+      const eventName = String(ev.name || ev.shortName || "");
+      const nameMatch = eventName.match(/(?:Week|Semana|Jornada|Matchday|J)\s*[:\-]?\s*(\d+)/i);
+      if (nameMatch) {
+        const num = Number(nameMatch[1]);
+        if (!isNaN(num) && num >= 0) jornada = num;
+      }
+    }
+    
+    // Try season type and week (alternative season structure)
+    if (jornada === "" && ev.season && ev.season.type) {
+      // Check if there's week info in event season
+      if (ev.season.week && typeof ev.season.week === "number") {
+        const num = Number(ev.season.week);
+        if (!isNaN(num) && num >= 0) jornada = num;
+      }
+    }
+    
+    // Try competition season slug or name
+    if (jornada === "" && comp.season && comp.season.slug) {
+      const slugMatch = String(comp.season.slug).match(/week-(\d+)|jornada-(\d+)/i);
+      if (slugMatch) {
+        const num = Number(slugMatch[1] || slugMatch[2]);
+        if (!isNaN(num) && num >= 0) jornada = num;
+      }
+    }
 
     const key = makePartidoKey_(fecha, local, visitante);
     if (existing.has(key)) continue;
@@ -1044,6 +1072,10 @@ function importarCalendarioESPN() {
       Logger.log(`⚠️ Partido sin jornada: ${local} vs ${visitante} - ${fecha}`);
       Logger.log(`   ev.week: ${JSON.stringify(ev.week)}`);
       Logger.log(`   comp.week: ${JSON.stringify(comp.week)}`);
+      Logger.log(`   comp.season: ${JSON.stringify(comp.season)}`);
+      Logger.log(`   comp.status: ${JSON.stringify(comp.status)}`);
+      Logger.log(`   ev.season: ${JSON.stringify(ev.season)}`);
+      Logger.log(`   Nombre evento: ${ev.name || ev.shortName || "N/A"}`);
     }
 
     rows.push([jornada, fecha, local, visitante, "", ""]);
