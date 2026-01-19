@@ -580,8 +580,37 @@ function submitAll(){
 /* ---------- TABLA / TRANSPARENCIA ---------- */
 function openTabla(){
   document.getElementById("tablaCard").style.display = "block";
+  loadPremioMayor();
   loadPremioMenor();
   loadTabla();
+}
+
+function loadPremioMayor(){
+  const box = document.getElementById("premioMayorBox");
+  box.innerHTML = "";
+
+  google.script.run.withSuccessHandler(r=>{
+    if(!r || !r.ok){
+      box.innerHTML = `<div class="small bad">🏆 Premio mayor: ${esc(r?.error || "No disponible (cierra la jornada)")}</div>`;
+      return;
+    }
+    if(!r.winners || !r.winners.length){
+      box.innerHTML = `<div class="small">🏆 Premio mayor: (sin datos)</div>`;
+      return;
+    }
+    
+    const ganadores = r.winners.map(w => `${esc(w.nombre)} (Entry ${esc(w.entry)})`).join(', ');
+    const compartido = r.winners.length > 1 ? ` <span class="small">(premio compartido)</span>` : '';
+    
+    box.innerHTML = `
+      <div class="card" style="background:rgba(53,212,154,.1);border-color:#35d49a;margin-bottom:10px">
+        🏆 <strong>Premio Mayor - Más Aciertos</strong>${compartido}<br>
+        Ganador${r.winners.length > 1 ? 'es' : ''}: <strong>${ganadores}</strong><br>
+        Aciertos: <strong>${esc(r.maxAciertos)}</strong><br>
+        <div class="small" style="margin-top:6px;opacity:.9">Premio al que tenga más aciertos en resultados (L/V/E). Si hay empate, se reparte el premio.</div>
+      </div>
+    `;
+  }).api_getPremioMayor(SESSION.jornada);
 }
 
 function loadPremioMenor(){
@@ -590,19 +619,19 @@ function loadPremioMenor(){
 
   google.script.run.withSuccessHandler(r=>{
     if(!r || !r.ok){
-      box.innerHTML = `<div class="small bad">🥈 Premio marcador exacto: ${esc(r?.error || "No disponible (cierra la jornada)")}</div>`;
+      box.innerHTML = `<div class="small bad">🥈 Premio menor: ${esc(r?.error || "No disponible (cierra la jornada)")}</div>`;
       return;
     }
     if(!r.winner){
-      box.innerHTML = `<div class="small">🥈 Premio marcador exacto: (sin datos)</div>`;
+      box.innerHTML = `<div class="small">🥈 Premio menor: (sin datos)</div>`;
       return;
     }
     box.innerHTML = `
-      <div class="card" style="background:rgba(255,255,255,.03)">
-        🥈 <strong>Premio marcador exacto</strong><br>
+      <div class="card" style="background:rgba(124,156,255,.1);border-color:#7c9cff;margin-bottom:10px">
+        🥈 <strong>Premio Menor - Marcadores Exactos</strong><br>
         Ganador: <strong>${esc(r.winner.nombre)} (Entry ${esc(r.winner.entry)})</strong><br>
         Exactos: <strong>${esc(r.winner.exactos)}</strong> · Aciertos: <strong>${esc(r.winner.aciertos)}</strong><br>
-        <div class="small" style="margin-top:6px">Desempate: exactos → aciertos → primero en enviar.</div>
+        <div class="small" style="margin-top:6px;opacity:.9">Premio menor a quien tenga más aciertos en marcadores exactos. No hay empates.<br>Desempate: exactos → aciertos → primero en enviar.</div>
       </div>
     `;
   }).api_getPremioMarcadorExactoPorEntry(SESSION.jornada);

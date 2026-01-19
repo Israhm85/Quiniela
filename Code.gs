@@ -780,6 +780,108 @@ function api_getTablaGeneral() {
   return { ok:true, rows };
 }
 
+/***************
+ * PREMIO MAYOR (MÁS ACIERTOS) - POR JORNADA
+ * - Gana quien tenga más aciertos (L/V/E correctos)
+ * - Si hay empate, se reparte el premio (múltiples ganadores)
+ * - Solo visible si JornadaCerrada=SI
+ ***************/
+function api_getPremioMayor(jornadaOpt) {
+  const jornada = Number(jornadaOpt) || Number(getConfig_("JornadaActual")) || 1;
+
+  // Solo visible si está cerrada
+  if (!isJornadaCerrada_()) {
+    return { ok: false, error: "La jornada aún no está cerrada." };
+  }
+
+  const ss = SpreadsheetApp.getActive();
+
+  // 1) Index de resultados reales por partido
+  const shPar = ss.getSheetByName(SHEETS.PARTIDOS);
+  const lrP = shPar.getLastRow();
+  if (lrP < 2) return { ok: false, error: "PARTIDOS vacío." };
+
+  const partidos = shPar.getRange(2, 1, lrP - 1, 6).getValues()
+    .filter(r => Number(r[0]) === jornada)
+    .map(r => ({
+      local: String(r[2] || "").trim(),
+      visit: String(r[3] || "").trim(),
+      marcadorReal: String(r[4] || "").trim(),
+      resReal: String(r[5] || "").trim() || (r[4] ? (calcResFromMarcador_(String(r[4]).trim()) || "") : "")
+    }))
+    .filter(p => p.local && p.visit);
+
+  if (!partidos.length) return { ok: false, error: `No hay partidos para jornada ${jornada}.` };
+
+  const resIndex = {};
+  for (const p of partidos) {
+    resIndex[makeKeyRes_(jornada, p.local, p.visit)] = p.resReal;
+  }
+
+  // 2) Leer PRONOSTICOS de la jornada
+  const shPro = ss.getSheetByName(SHEETS.PRONOSTICOS);
+  const lr = shPro.getLastRow();
+  if (lr < 2) return { ok: false, error: "PRONOSTICOS vacío." };
+
+  const data = shPro.getRange(2, 1, lr - 1, 10).getValues();
+
+  // 3) Contar aciertos por entry
+  const map = new Map(); // key = id|entry
+  for (const r of data) {
+    const jor = Number(r[0]);
+    if (jor !== jornada) continue;
+
+    const id = Number(r[1]);
+    const nombre = String(r[2] || "");
+    const entry = Number(r[3]) || 1;
+    const local = String(r[4] || "").trim();
+    const visit = String(r[5] || "").trim();
+    const pick = String(r[6] || "").trim().toUpperCase();
+
+    if (!id || !local || !visit) continue;
+
+    const key = `${id}|${entry}`;
+    if (!map.has(key)) {
+      map.set(key, { id, entry, nombre, aciertos: 0 });
+    }
+
+    const obj = map.get(key);
+    if (!obj.nombre && nombre) obj.nombre = nombre;
+
+    // Contar aciertos si hay resultado real
+    const kPartido = makeKeyRes_(jornada, local, visit);
+    const resReal = resIndex[kPartido];
+    if (resReal && pick && pick === resReal) {
+      obj.aciertos += 1;
+    }
+  }
+
+  const rows = Array.from(map.values());
+  if (!rows.length) {
+    return { ok: true, jornada, winners: [], maxAciertos: 0 };
+  }
+
+  // 4) Encontrar el máximo de aciertos
+  const maxAciertos = Math.max(...rows.map(r => r.aciertos));
+
+  // 5) Todos los que tengan el máximo son ganadores (se reparte el premio)
+  const winners = rows
+    .filter(r => r.aciertos === maxAciertos)
+    .sort((a, b) => String(a.nombre).localeCompare(String(b.nombre)));
+
+  return {
+    ok: true,
+    jornada,
+    maxAciertos,
+    winners: winners.map(w => ({
+      id: w.id,
+      entry: w.entry,
+      nombre: w.nombre,
+      aciertos: w.aciertos
+    }))
+  };
+}
+
 function getPartidosWebPorJornada_(jornada, lockMinutes) {
   const ss = SpreadsheetApp.getActive();
   const sh = ss.getSheetByName(SHEETS.PARTIDOS);
