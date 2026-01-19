@@ -156,6 +156,16 @@
       opacity:.6;
       filter:grayscale(1);
     }
+    .decimo-badge{
+      background:#7c9cff;
+      color:#fff;
+      padding:4px 8px;
+      border-radius:6px;
+      font-size:12px;
+      font-weight:900;
+      display:inline-block;
+      margin-bottom:6px;
+    }
     
     /* ===== RESPONSIVE DESIGN ===== */
     
@@ -318,7 +328,7 @@
   <!-- FORMULARIO -->
   <div class="card" id="formCard" style="display:none">
     <h2 id="jorTitle"></h2>
-    <div class="small">Tienes <strong>2 pronósticos</strong>. Cada uno compite por separado.</div>
+    <div class="small">Tienes <strong>2 pronósticos</strong>. Cada uno compite por separado. Incluye hasta 10 partidos (9 Liga MX + 1 partido extra opcional).</div>
 
     <!-- INFO DE PREMIOS -->
     <div style="margin-top:12px;padding:12px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px">
@@ -500,8 +510,15 @@ function renderForm(){
       ? `<div class="small bad">🔒 Bloqueado (${esc(p.reason||"")})</div>`
       : `<div class="small ok">✅ Abierto</div>`;
 
+    // ✅ Destacar décimo partido
+    const isDecimo = p.esDecimoPartido === true;
+    const decimoBadge = isDecimo 
+      ? `<div class="decimo-badge">🌍 PARTIDO EXTRA - ${esc(p.liga || "")}</div>` 
+      : "";
+
     html += `
-      <div class="card ${locked ? "locked":""}">
+      <div class="card ${locked ? "locked":""}" ${isDecimo ? 'style="border:2px solid #7c9cff;background:rgba(124,156,255,.05)"' : ''}>
+        ${decimoBadge}
         <div class="matchHead">
           <div class="team">
             ${p.logoLocal ? `<img class="logo" src="${esc(p.logoLocal)}" alt="">` : ``}

@@ -15,6 +15,8 @@ const SHEETS = {
   PRONOSTICOS: "PRONOSTICOS",
   TABLA: "TABLA",
   EQUIPOS: "EQUIPOS", // ✅ NUEVO
+  DECIMO_PARTIDO: "DECIMO_PARTIDO", // ✅ DÉCIMO PARTIDO
+  PRINT: "PRINT", // ✅ HOJA DE IMPRESIÓN
 };
 
 
@@ -41,7 +43,14 @@ function onOpen() {
     .addItem("📅 Importar calendario (ESPN)", "importarCalendarioESPN")
     .addItem("🧠 Rellenar jornadas faltantes", "rellenarJornadasFaltantes")
     .addItem("🧹 Normalizar jornadas a 17", "normalizarJornadasLigaMX")
-    .addItem("⚽ Sync marcadores (ESPN)", "syncMarcadoresESPN")
+    .addItem("⚽ Sync marcadores (jornada actual)", "syncMarcadoresESPN")
+    .addItem("🔄 Sync marcadores (elegir jornada)", "uiSyncMarcadoresConJornada")
+    .addSeparator()
+    .addItem("🌍 Seleccionar décimo partido", "uiSeleccionarDecimoPartido")
+    .addItem("⚽ Capturar marcador décimo partido", "uiCapturarMarcadorDecimoPartido")
+    .addItem("🗑️ Quitar décimo partido", "quitarDecimoPartido")
+    .addSeparator()
+    .addItem("🖨️ Actualizar hoja de impresión", "actualizarHojaImpresion")
     .addSeparator()
     .addItem("🗓️ Programar Sync por calendario (hoy/mañana)", "programarSyncPorCalendario")
     .addItem("🧹 Borrar triggers de Sync", "desactivarAutoSyncMarcadores")
@@ -73,6 +82,11 @@ function setupInicial() {
   if (!shEq) shEq = ss.insertSheet(SHEETS.EQUIPOS);
   ensureHeaders_(shEq, ["NOMBRE", "LOGO"]);
 
+  // ✅ NUEVA hoja para décimo partido
+  let shDecimo = ss.getSheetByName(SHEETS.DECIMO_PARTIDO);
+  if (!shDecimo) shDecimo = ss.insertSheet(SHEETS.DECIMO_PARTIDO);
+  ensureHeaders_(shDecimo, ["JORNADA", "LIGA", "LOCAL", "VISITANTE", "FECHA", "LOGO_LOCAL", "LOGO_VISITANTE"]);
+
   const shCfg = ss.getSheetByName(SHEETS.CONFIG);
   const map = readConfigMap_(shCfg);
 
@@ -91,7 +105,7 @@ function setupInicial() {
   if (shCfg.getLastRow() > 1) shCfg.getRange(2, 1, shCfg.getLastRow() - 1, 2).clearContent();
   shCfg.getRange(2, 1, defaults.length, 2).setValues(defaults);
 
-  SpreadsheetApp.getUi().alert("Setup listo ✅ (incluye ENTRY 2x1 + EQUIPOS logos + sistema de pagos + % configurables).");
+  SpreadsheetApp.getUi().alert("Setup listo ✅ (incluye ENTRY 2x1 + EQUIPOS logos + sistema de pagos + % configurables + décimo partido opcional).");
 }
 
 
@@ -207,6 +221,16 @@ function generarPronosticosJornadaConfig() {
 
   const partidos = getPartidosPorJornada_(jornada);
   if (!partidos.length) return SpreadsheetApp.getUi().alert(`No hay partidos para jornada ${jornada}.`);
+  
+  // ✅ Agregar décimo partido si existe
+  const decimoPartido = getDecimoPartidoPorJornada_(jornada);
+  if (decimoPartido && decimoPartido.local && decimoPartido.visitante) {
+    partidos.push({
+      jornada: jornada,
+      local: decimoPartido.local,
+      visitante: decimoPartido.visitante
+    });
+  }
 
   const jugadores = getJugadoresActivos_();
   if (!jugadores.length) return SpreadsheetApp.getUi().alert("No hay jugadores activos.");
@@ -1028,39 +1052,70 @@ function getPartidosWebPorJornada_(jornada, lockMinutes) {
   const ss = SpreadsheetApp.getActive();
   const sh = ss.getSheetByName(SHEETS.PARTIDOS);
   const lr = sh.getLastRow();
-  if (lr < 2) return [];
-
+  
   const now = new Date();
-  const rows = sh.getRange(2,1,lr-1,6).getValues();
+  const partidos = [];
+  
+  // Obtener partidos de Liga MX
+  if (lr >= 2) {
+    const rows = sh.getRange(2,1,lr-1,6).getValues();
 
-  return rows
-    .filter(r => Number(r[0]) === Number(jornada))
-    .map(r => {
-      const fecha = parseDateSafe_(r[1]);
-      const local = String(r[2] || "");
-      const visit = String(r[3] || "");
-      const marcador = String(r[4] || "").trim();
+    rows
+      .filter(r => Number(r[0]) === Number(jornada))
+      .forEach(r => {
+        const fecha = parseDateSafe_(r[1]);
+        const local = String(r[2] || "");
+        const visit = String(r[3] || "");
+        const marcador = String(r[4] || "").trim();
 
-      let locked = false;
-      let reason = "";
+        let locked = false;
+        let reason = "";
 
-      if (marcador) { locked = true; reason = "MARCADOR"; }
-      else if (fecha) {
-        const lockTime = new Date(fecha.getTime() - lockMinutes*60*1000);
-        if (now >= lockTime) { locked = true; reason = "TIEMPO"; }
-      }
+        if (marcador) { locked = true; reason = "MARCADOR"; }
+        else if (fecha) {
+          const lockTime = new Date(fecha.getTime() - lockMinutes*60*1000);
+          if (now >= lockTime) { locked = true; reason = "TIEMPO"; }
+        }
 
-      return {
-        local, visit,
-        fechaTxt: fecha ? formatDate_(fecha) : "",
-        marcador,
-        locked, reason,
-        // ✅ escudos
-        logoLocal: getLigaMxLogoUrl_(local),
-        logoVisit: getLigaMxLogoUrl_(visit),
-      };
-    })
-    .filter(p => p.local && p.visit);
+        if (local && visit) {
+          partidos.push({
+            local, visit,
+            fechaTxt: fecha ? formatDate_(fecha) : "",
+            marcador,
+            locked, reason,
+            logoLocal: getLigaMxLogoUrl_(local),
+            logoVisit: getLigaMxLogoUrl_(visit),
+          });
+        }
+      });
+  }
+  
+  // ✅ Agregar décimo partido si existe
+  const decimoPartido = getDecimoPartidoPorJornada_(jornada);
+  if (decimoPartido && decimoPartido.local && decimoPartido.visitante) {
+    let locked = false;
+    let reason = "";
+    
+    if (decimoPartido.fecha) {
+      const lockTime = new Date(decimoPartido.fecha.getTime() - lockMinutes*60*1000);
+      if (now >= lockTime) { locked = true; reason = "TIEMPO"; }
+    }
+    
+    partidos.push({
+      local: decimoPartido.local,
+      visit: decimoPartido.visitante,
+      fechaTxt: decimoPartido.fecha ? formatDate_(decimoPartido.fecha) : "",
+      marcador: "", // No tiene marcador en tiempo real
+      locked, 
+      reason,
+      logoLocal: decimoPartido.logoLocal,
+      logoVisit: decimoPartido.logoVisit,
+      esDecimoPartido: true, // ✅ Marcador para identificarlo
+      liga: decimoPartido.liga,
+    });
+  }
+  
+  return partidos;
 }
 
 /***************
@@ -1340,6 +1395,455 @@ function importarCalendarioESPN() {
   }
   SpreadsheetApp.getUi().alert(mensaje);
 }
+
+/***************
+ * SYNC MARCADORES DESDE ESPN
+ * Actualiza marcadores de partidos ya importados usando la API de ESPN
+ ***************/
+function syncMarcadoresESPN() {
+  const ss = SpreadsheetApp.getActive();
+  const shPar = ss.getSheetByName(SHEETS.PARTIDOS);
+  const jornada = Number(getConfig_("JornadaActual")) || 1;
+  
+  // Obtener fechas de la jornada actual
+  const lr = shPar.getLastRow();
+  if (lr < 2) {
+    SpreadsheetApp.getUi().alert("No hay partidos en la hoja PARTIDOS.");
+    return;
+  }
+  
+  const data = shPar.getRange(2, 1, lr - 1, 6).getValues();
+  const partidosJornada = [];
+  
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i];
+    if (Number(row[0]) === jornada) {
+      partidosJornada.push({
+        rowIndex: i + 2,
+        jornada: row[0],
+        fecha: row[1],
+        local: String(row[2] || "").trim(),
+        visitante: String(row[3] || "").trim(),
+        marcadorActual: String(row[4] || "").trim(),
+        resActual: String(row[5] || "").trim()
+      });
+    }
+  }
+  
+  if (!partidosJornada.length) {
+    SpreadsheetApp.getUi().alert(`No hay partidos para la jornada ${jornada}.`);
+    return;
+  }
+  
+  // Obtener rango de fechas para consultar ESPN
+  const fechas = partidosJornada.map(p => p.fecha).filter(f => f instanceof Date);
+  if (!fechas.length) {
+    SpreadsheetApp.getUi().alert("Los partidos no tienen fechas válidas.");
+    return;
+  }
+  
+  const minFecha = new Date(Math.min(...fechas.map(f => f.getTime())));
+  const maxFecha = new Date(Math.max(...fechas.map(f => f.getTime())));
+  
+  // Agregar margen de 1 día antes y después
+  minFecha.setDate(minFecha.getDate() - 1);
+  maxFecha.setDate(maxFecha.getDate() + 1);
+  
+  const desde = Utilities.formatDate(minFecha, Session.getScriptTimeZone(), "yyyyMMdd");
+  const hasta = Utilities.formatDate(maxFecha, Session.getScriptTimeZone(), "yyyyMMdd");
+  
+  const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/mex.1/scoreboard?dates=${desde}-${hasta}&limit=1000`;
+  
+  const resp = UrlFetchApp.fetch(url, {
+    muteHttpExceptions: true,
+    headers: { "User-Agent": "Mozilla/5.0" }
+  });
+  
+  if (resp.getResponseCode() !== 200) {
+    SpreadsheetApp.getUi().alert(`Error ESPN: HTTP ${resp.getResponseCode()}`);
+    return;
+  }
+  
+  const json = JSON.parse(resp.getContentText());
+  const events = json.events || [];
+  
+  if (!events.length) {
+    SpreadsheetApp.getUi().alert("No encontré partidos en ESPN para ese rango de fechas.");
+    return;
+  }
+  
+  let actualizados = 0;
+  let sinCambios = 0;
+  
+  for (const partido of partidosJornada) {
+    // Buscar el partido en los eventos de ESPN
+    const localNorm = normalizeTeam_(partido.local);
+    const visitNorm = normalizeTeam_(partido.visitante);
+    
+    let found = null;
+    for (const ev of events) {
+      const comp = (ev.competitions && ev.competitions[0]) ? ev.competitions[0] : null;
+      if (!comp) continue;
+      
+      const competitors = comp.competitors || [];
+      const home = competitors.find(c => c.homeAway === "home");
+      const away = competitors.find(c => c.homeAway === "away");
+      if (!home || !away) continue;
+      
+      const espnLocal = home.team?.shortDisplayName || home.team?.displayName || "";
+      const espnVisit = away.team?.shortDisplayName || away.team?.displayName || "";
+      
+      if (normalizeTeam_(espnLocal) === localNorm && normalizeTeam_(espnVisit) === visitNorm) {
+        found = { comp, home, away };
+        break;
+      }
+    }
+    
+    if (!found) continue;
+    
+    const { comp, home, away } = found;
+    
+    // Verificar si el partido ha terminado
+    const status = comp.status?.type?.completed || false;
+    if (!status) {
+      sinCambios++;
+      continue;
+    }
+    
+    // Obtener marcador
+    const scoreHome = home.score || "0";
+    const scoreAway = away.score || "0";
+    const marcador = `${scoreHome}-${scoreAway}`;
+    
+    // Si ya tiene el mismo marcador, no actualizar
+    if (partido.marcadorActual === marcador) {
+      sinCambios++;
+      continue;
+    }
+    
+    // Calcular resultado
+    const res = calcResFromMarcador_(marcador);
+    
+    // Actualizar en la hoja
+    shPar.getRange(partido.rowIndex, 5).setValue(marcador);
+    shPar.getRange(partido.rowIndex, 6).setValue(res || "");
+    actualizados++;
+  }
+  
+  // Recalcular puntos si hubo actualizaciones
+  if (actualizados > 0) {
+    calcularPuntosParaJornada_(jornada);
+    actualizarTablaGeneral();
+  }
+  
+  let mensaje = `✅ Sync completado\n\n`;
+  mensaje += `📊 Jornada ${jornada}:\n`;
+  mensaje += `- Marcadores actualizados: ${actualizados}\n`;
+  mensaje += `- Sin cambios: ${sinCambios}\n`;
+  mensaje += `- No encontrados: ${partidosJornada.length - actualizados - sinCambios}`;
+  
+  if (actualizados > 0) {
+    mensaje += `\n\n✅ Puntos recalculados automáticamente.`;
+  }
+  
+  SpreadsheetApp.getUi().alert(mensaje);
+}
+
+/***************
+ * UI: SYNC MARCADORES CON SELECCIÓN DE JORNADA
+ ***************/
+function uiSyncMarcadoresConJornada() {
+  const ui = SpreadsheetApp.getUi();
+  const jornadaActual = Number(getConfig_("JornadaActual")) || 1;
+  
+  const resp = ui.prompt(
+    "Sync Marcadores ESPN",
+    `¿Qué jornada deseas sincronizar?\n\nJornada actual en CONFIG: ${jornadaActual}\n\nEscribe el número de jornada (1, 2, 3, etc.)`,
+    ui.ButtonSet.OK_CANCEL
+  );
+  
+  if (resp.getSelectedButton() !== ui.Button.OK) return;
+  
+  const jornadaInput = resp.getResponseText().trim();
+  const jornada = Number(jornadaInput);
+  
+  if (isNaN(jornada) || jornada < 1) {
+    ui.alert("⛔ Número de jornada inválido. Usa números positivos como 1, 2, 3, etc.");
+    return;
+  }
+  
+  // Llamar a la función de sync con la jornada especificada
+  syncMarcadoresESPNParaJornada_(jornada);
+}
+
+/***************
+ * SYNC MARCADORES DESDE ESPN - JORNADA ESPECÍFICA
+ ***************/
+function syncMarcadoresESPNParaJornada_(jornadaParam) {
+  const ss = SpreadsheetApp.getActive();
+  const shPar = ss.getSheetByName(SHEETS.PARTIDOS);
+  const jornada = Number(jornadaParam) || Number(getConfig_("JornadaActual")) || 1;
+  
+  // Obtener fechas de la jornada especificada
+  const lr = shPar.getLastRow();
+  if (lr < 2) {
+    SpreadsheetApp.getUi().alert("No hay partidos en la hoja PARTIDOS.");
+    return;
+  }
+  
+  const data = shPar.getRange(2, 1, lr - 1, 6).getValues();
+  const partidosJornada = [];
+  
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i];
+    if (Number(row[0]) === jornada) {
+      partidosJornada.push({
+        rowIndex: i + 2,
+        jornada: row[0],
+        fecha: row[1],
+        local: String(row[2] || "").trim(),
+        visitante: String(row[3] || "").trim(),
+        marcadorActual: String(row[4] || "").trim(),
+        resActual: String(row[5] || "").trim()
+      });
+    }
+  }
+  
+  if (!partidosJornada.length) {
+    SpreadsheetApp.getUi().alert(`⚠️ No hay partidos para la jornada ${jornada}.\n\nVerifica que:\n1. Los partidos estén en la hoja PARTIDOS\n2. La columna JORNADA tenga el número ${jornada}\n3. Hayas importado el calendario con "📅 Importar calendario (ESPN)"`);
+    return;
+  }
+  
+  // Obtener rango de fechas para consultar ESPN
+  const fechas = partidosJornada.map(p => p.fecha).filter(f => f instanceof Date);
+  if (!fechas.length) {
+    SpreadsheetApp.getUi().alert(`⚠️ Los partidos de la jornada ${jornada} no tienen fechas válidas.\n\nAsegúrate de haber importado el calendario primero con "📅 Importar calendario (ESPN)"`);
+    return;
+  }
+  
+  const minFecha = new Date(Math.min(...fechas.map(f => f.getTime())));
+  const maxFecha = new Date(Math.max(...fechas.map(f => f.getTime())));
+  
+  // Agregar margen de 1 día antes y después
+  minFecha.setDate(minFecha.getDate() - 1);
+  maxFecha.setDate(maxFecha.getDate() + 1);
+  
+  const desde = Utilities.formatDate(minFecha, Session.getScriptTimeZone(), "yyyyMMdd");
+  const hasta = Utilities.formatDate(maxFecha, Session.getScriptTimeZone(), "yyyyMMdd");
+  
+  const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/mex.1/scoreboard?dates=${desde}-${hasta}&limit=1000`;
+  
+  const resp = UrlFetchApp.fetch(url, {
+    muteHttpExceptions: true,
+    headers: { "User-Agent": "Mozilla/5.0" }
+  });
+  
+  if (resp.getResponseCode() !== 200) {
+    SpreadsheetApp.getUi().alert(`Error ESPN: HTTP ${resp.getResponseCode()}`);
+    return;
+  }
+  
+  const json = JSON.parse(resp.getContentText());
+  const events = json.events || [];
+  
+  if (!events.length) {
+    SpreadsheetApp.getUi().alert(`⚠️ No encontré partidos en ESPN para las fechas:\n${desde} - ${hasta}\n\nPosibles causas:\n1. Los partidos aún no están en ESPN\n2. Las fechas en la hoja PARTIDOS son incorrectas\n3. ESPN no tiene datos para ese rango`);
+    return;
+  }
+  
+  let actualizados = 0;
+  let sinCambios = 0;
+  
+  for (const partido of partidosJornada) {
+    // Buscar el partido en los eventos de ESPN
+    const localNorm = normalizeTeam_(partido.local);
+    const visitNorm = normalizeTeam_(partido.visitante);
+    
+    let found = null;
+    for (const ev of events) {
+      const comp = (ev.competitions && ev.competitions[0]) ? ev.competitions[0] : null;
+      if (!comp) continue;
+      
+      const competitors = comp.competitors || [];
+      const home = competitors.find(c => c.homeAway === "home");
+      const away = competitors.find(c => c.homeAway === "away");
+      if (!home || !away) continue;
+      
+      const espnLocal = home.team?.shortDisplayName || home.team?.displayName || "";
+      const espnVisit = away.team?.shortDisplayName || away.team?.displayName || "";
+      
+      if (normalizeTeam_(espnLocal) === localNorm && normalizeTeam_(espnVisit) === visitNorm) {
+        found = { comp, home, away };
+        break;
+      }
+    }
+    
+    if (!found) continue;
+    
+    const { comp, home, away } = found;
+    
+    // Verificar si el partido ha terminado
+    const status = comp.status?.type?.completed || false;
+    if (!status) {
+      sinCambios++;
+      continue;
+    }
+    
+    // Obtener marcador
+    const scoreHome = home.score || "0";
+    const scoreAway = away.score || "0";
+    const marcador = `${scoreHome}-${scoreAway}`;
+    
+    // Si ya tiene el mismo marcador, no actualizar
+    if (partido.marcadorActual === marcador) {
+      sinCambios++;
+      continue;
+    }
+    
+    // Calcular resultado
+    const res = calcResFromMarcador_(marcador);
+    
+    // Actualizar en la hoja
+    shPar.getRange(partido.rowIndex, 5).setValue(marcador);
+    shPar.getRange(partido.rowIndex, 6).setValue(res || "");
+    actualizados++;
+  }
+  
+  // Recalcular puntos si hubo actualizaciones
+  if (actualizados > 0) {
+    calcularPuntosParaJornada_(jornada);
+    actualizarTablaGeneral();
+  }
+  
+  let mensaje = `✅ Sync completado\n\n`;
+  mensaje += `📊 Jornada ${jornada}:\n`;
+  mensaje += `- Partidos en hoja: ${partidosJornada.length}\n`;
+  mensaje += `- Marcadores actualizados: ${actualizados}\n`;
+  mensaje += `- Sin cambios/no terminados: ${sinCambios}\n`;
+  mensaje += `- No encontrados en ESPN: ${partidosJornada.length - actualizados - sinCambios}`;
+  
+  if (actualizados > 0) {
+    mensaje += `\n\n✅ Puntos recalculados automáticamente.`;
+  }
+  
+  SpreadsheetApp.getUi().alert(mensaje);
+}
+
+function syncMarcadoresESPN() {
+  // Llamar a la función con la jornada actual
+  const jornada = Number(getConfig_("JornadaActual")) || 1;
+  syncMarcadoresESPNParaJornada_(jornada);
+}
+
+/***************
+ * PROGRAMACIÓN AUTOMÁTICA DE SYNC
+ ***************/
+function programarSyncPorCalendario() {
+  // Eliminar triggers existentes de sync
+  desactivarAutoSyncMarcadores();
+  
+  const ss = SpreadsheetApp.getActive();
+  const shPar = ss.getSheetByName(SHEETS.PARTIDOS);
+  const jornada = Number(getConfig_("JornadaActual")) || 1;
+  
+  // Obtener fechas de partidos de la jornada actual
+  const lr = shPar.getLastRow();
+  if (lr < 2) {
+    SpreadsheetApp.getUi().alert("No hay partidos en la hoja PARTIDOS.");
+    return;
+  }
+  
+  const data = shPar.getRange(2, 1, lr - 1, 2).getValues();
+  const fechas = [];
+  
+  for (const row of data) {
+    if (Number(row[0]) === jornada && row[1] instanceof Date) {
+      fechas.push(row[1]);
+    }
+  }
+  
+  if (!fechas.length) {
+    SpreadsheetApp.getUi().alert(`No hay partidos con fecha para la jornada ${jornada}.`);
+    return;
+  }
+  
+  // Programar sync cada 30 minutos durante los días de partidos
+  const minFecha = new Date(Math.min(...fechas.map(f => f.getTime())));
+  const maxFecha = new Date(Math.max(...fechas.map(f => f.getTime())));
+  
+  // Agregar 4 horas después del último partido
+  maxFecha.setHours(maxFecha.getHours() + 4);
+  
+  const ahora = new Date();
+  let triggerCount = 0;
+  
+  // Crear triggers cada 30 minutos desde ahora hasta el final de los partidos
+  let current = new Date(Math.max(ahora.getTime(), minFecha.getTime() - 60 * 60 * 1000)); // 1 hora antes del primer partido
+  
+  while (current <= maxFecha && triggerCount < 20) { // Límite de 20 triggers por seguridad
+    ScriptApp.newTrigger("syncMarcadoresESPN")
+      .timeBased()
+      .at(current)
+      .create();
+    
+    triggerCount++;
+    current = new Date(current.getTime() + 30 * 60 * 1000); // Cada 30 minutos
+  }
+  
+  SpreadsheetApp.getUi().alert(`✅ Programados ${triggerCount} syncs automáticos\n\nDesde: ${Utilities.formatDate(minFecha, Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm")}\nHasta: ${Utilities.formatDate(maxFecha, Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm")}\n\nCada 30 minutos durante los partidos.`);
+}
+
+function desactivarAutoSyncMarcadores() {
+  const triggers = ScriptApp.getProjectTriggers();
+  let count = 0;
+  
+  for (const trigger of triggers) {
+    if (trigger.getHandlerFunction() === "syncMarcadoresESPN") {
+      ScriptApp.deleteTrigger(trigger);
+      count++;
+    }
+  }
+  
+  if (count > 0) {
+    SpreadsheetApp.getUi().alert(`✅ Se eliminaron ${count} trigger(s) de sync automático.`);
+  } else {
+    SpreadsheetApp.getUi().alert("No había triggers de sync activos.");
+  }
+}
+
+function activarProgramacionDiariaSync() {
+  // Eliminar trigger diario existente si lo hay
+  desactivarProgramacionDiariaSync();
+  
+  // Crear trigger que se ejecuta todos los días a las 10am
+  ScriptApp.newTrigger("syncMarcadoresESPN")
+    .timeBased()
+    .atHour(10)
+    .everyDays(1)
+    .create();
+  
+  SpreadsheetApp.getUi().alert("✅ Programación diaria activada\n\nEl sync se ejecutará automáticamente todos los días a las 10:00 AM.");
+}
+
+function desactivarProgramacionDiariaSync() {
+  const triggers = ScriptApp.getProjectTriggers();
+  let count = 0;
+  
+  for (const trigger of triggers) {
+    if (trigger.getHandlerFunction() === "syncMarcadoresESPN" && 
+        trigger.getEventType() === ScriptApp.EventType.CLOCK) {
+      ScriptApp.deleteTrigger(trigger);
+      count++;
+    }
+  }
+  
+  if (count > 0) {
+    SpreadsheetApp.getUi().alert(`✅ Se desactivó la programación diaria (${count} trigger(s) eliminado(s)).`);
+  } else {
+    SpreadsheetApp.getUi().alert("No había programación diaria activa.");
+  }
+}
+
 function existingPartidosKeySet_() {
   const ss = SpreadsheetApp.getActive();
   const sh = ss.getSheetByName(SHEETS.PARTIDOS);
@@ -1767,4 +2271,399 @@ function normalizeTeam_(s) {
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .replace(/[^\w\s]/g, ""); // quita símbolos
 }
+
+/***************
+ * DÉCIMO PARTIDO - EQUIPOS PREDEFINIDOS
+ ***************/
+function getEquiposLaLiga_() {
+  return [
+    { nombre: "Real Madrid", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/86.png" },
+    { nombre: "Barcelona", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/83.png" },
+    { nombre: "Atlético Madrid", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/1068.png" },
+    { nombre: "Sevilla", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/243.png" },
+    { nombre: "Real Betis", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/244.png" },
+    { nombre: "Real Sociedad", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/90.png" },
+    { nombre: "Villarreal", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/94.png" },
+    { nombre: "Athletic Bilbao", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/81.png" },
+    { nombre: "Valencia", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/93.png" },
+    { nombre: "Getafe", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/3447.png" },
+    { nombre: "Osasuna", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/3448.png" },
+    { nombre: "Celta Vigo", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/3449.png" },
+    { nombre: "Rayo Vallecano", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/95.png" },
+    { nombre: "Mallorca", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/3452.png" },
+    { nombre: "Girona", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/3451.png" },
+    { nombre: "Alavés", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/3458.png" },
+    { nombre: "Las Palmas", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/3456.png" },
+    { nombre: "Espanyol", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/88.png" },
+    { nombre: "Leganés", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/7747.png" },
+    { nombre: "Valladolid", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/3457.png" },
+  ];
+}
+
+function getEquiposPremierLeague_() {
+  return [
+    { nombre: "Manchester City", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/382.png" },
+    { nombre: "Arsenal", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/359.png" },
+    { nombre: "Liverpool", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/364.png" },
+    { nombre: "Manchester United", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/360.png" },
+    { nombre: "Chelsea", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/363.png" },
+    { nombre: "Tottenham", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/367.png" },
+    { nombre: "Newcastle", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/361.png" },
+    { nombre: "Aston Villa", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/362.png" },
+    { nombre: "Brighton", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/331.png" },
+    { nombre: "West Ham", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/371.png" },
+    { nombre: "Everton", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/368.png" },
+    { nombre: "Crystal Palace", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/384.png" },
+    { nombre: "Fulham", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/370.png" },
+    { nombre: "Bournemouth", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/349.png" },
+    { nombre: "Brentford", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/337.png" },
+    { nombre: "Nottingham Forest", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/393.png" },
+    { nombre: "Wolves", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/380.png" },
+    { nombre: "Leicester City", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/375.png" },
+    { nombre: "Ipswich Town", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/373.png" },
+    { nombre: "Southampton", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/376.png" },
+  ];
+}
+
+/***************
+ * UI: SELECCIONAR DÉCIMO PARTIDO
+ ***************/
+function uiSeleccionarDecimoPartido() {
+  const ui = SpreadsheetApp.getUi();
+  
+  // Paso 1: Seleccionar liga
+  const ligaResp = ui.alert(
+    "Seleccionar Liga",
+    "¿Qué liga deseas usar para el décimo partido?",
+    ui.ButtonSet.YES_NO_CANCEL
+  );
+  
+  let liga = "";
+  if (ligaResp === ui.Button.YES) {
+    liga = "LALIGA";
+  } else if (ligaResp === ui.Button.NO) {
+    liga = "PREMIER";
+  } else {
+    return; // Cancelado
+  }
+  
+  // Obtener equipos según la liga
+  const equipos = liga === "LALIGA" ? getEquiposLaLiga_() : getEquiposPremierLeague_();
+  const nombresEquipos = equipos.map(e => e.nombre);
+  
+  // Paso 2: Seleccionar equipo local
+  const localResp = ui.prompt(
+    "Equipo Local",
+    `Escribe el nombre del equipo local (${liga}):\n\nDisponibles: ${nombresEquipos.join(", ")}`,
+    ui.ButtonSet.OK_CANCEL
+  );
+  
+  if (localResp.getSelectedButton() !== ui.Button.OK) return;
+  const localNombre = localResp.getResponseText().trim();
+  const localEquipo = equipos.find(e => normalizeTeam_(e.nombre) === normalizeTeam_(localNombre));
+  
+  if (!localEquipo) {
+    ui.alert(`⛔ No encontré el equipo "${localNombre}". Verifica el nombre.`);
+    return;
+  }
+  
+  // Paso 3: Seleccionar equipo visitante
+  const visitResp = ui.prompt(
+    "Equipo Visitante",
+    `Escribe el nombre del equipo visitante (${liga}):\n\nDisponibles: ${nombresEquipos.join(", ")}`,
+    ui.ButtonSet.OK_CANCEL
+  );
+  
+  if (visitResp.getSelectedButton() !== ui.Button.OK) return;
+  const visitNombre = visitResp.getResponseText().trim();
+  const visitEquipo = equipos.find(e => normalizeTeam_(e.nombre) === normalizeTeam_(visitNombre));
+  
+  if (!visitEquipo) {
+    ui.alert(`⛔ No encontré el equipo "${visitNombre}". Verifica el nombre.`);
+    return;
+  }
+  
+  if (normalizeTeam_(localNombre) === normalizeTeam_(visitNombre)) {
+    ui.alert("⛔ Los equipos deben ser diferentes.");
+    return;
+  }
+  
+  // Paso 4: Fecha (opcional)
+  const fechaResp = ui.prompt(
+    "Fecha del Partido (opcional)",
+    "Formato: MM/DD/YYYY HH:MM AM/PM (ejemplo: 01/25/2026 3:00 PM)\nDeja vacío si no sabes la fecha.",
+    ui.ButtonSet.OK_CANCEL
+  );
+  
+  let fechaObj = null;
+  if (fechaResp.getSelectedButton() === ui.Button.OK) {
+    const fechaStr = fechaResp.getResponseText().trim();
+    if (fechaStr) {
+      fechaObj = new Date(fechaStr);
+      if (isNaN(fechaObj.getTime())) {
+        ui.alert("⚠️ Fecha inválida, se guardará sin fecha.");
+        fechaObj = null;
+      }
+    }
+  }
+  
+  // Guardar en hoja DECIMO_PARTIDO
+  const jornada = Number(getConfig_("JornadaActual")) || 1;
+  guardarDecimoPartido_(jornada, liga, localEquipo.nombre, visitEquipo.nombre, fechaObj, localEquipo.logo, visitEquipo.logo);
+  
+  ui.alert(`✅ Décimo partido configurado:\n${localEquipo.nombre} vs ${visitEquipo.nombre}\nLiga: ${liga}\nJornada: ${jornada}`);
+}
+
+function guardarDecimoPartido_(jornada, liga, local, visitante, fecha, logoLocal, logoVisit) {
+  const ss = SpreadsheetApp.getActive();
+  let sh = ss.getSheetByName(SHEETS.DECIMO_PARTIDO);
+  if (!sh) sh = ss.insertSheet(SHEETS.DECIMO_PARTIDO);
+  
+  ensureHeaders_(sh, ["JORNADA", "LIGA", "LOCAL", "VISITANTE", "FECHA", "LOGO_LOCAL", "LOGO_VISITANTE"]);
+  
+  // Buscar si ya existe un décimo partido para esta jornada
+  const lr = sh.getLastRow();
+  let found = false;
+  
+  if (lr >= 2) {
+    const data = sh.getRange(2, 1, lr - 1, 7).getValues();
+    for (let i = 0; i < data.length; i++) {
+      if (Number(data[i][0]) === Number(jornada)) {
+        // Actualizar fila existente
+        sh.getRange(i + 2, 1, 1, 7).setValues([[jornada, liga, local, visitante, fecha || "", logoLocal, logoVisit]]);
+        found = true;
+        break;
+      }
+    }
+  }
+  
+  if (!found) {
+    // Agregar nueva fila
+    sh.appendRow([jornada, liga, local, visitante, fecha || "", logoLocal, logoVisit]);
+  }
+  
+  // Guardar logos en EQUIPOS para uso futuro
+  upsertEquipoLogo_(local, logoLocal);
+  upsertEquipoLogo_(visitante, logoVisit);
+}
+
+function quitarDecimoPartido() {
+  const ui = SpreadsheetApp.getUi();
+  const jornada = Number(getConfig_("JornadaActual")) || 1;
+  
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEETS.DECIMO_PARTIDO);
+  
+  if (!sh) {
+    ui.alert("No hay hoja de décimo partido.");
+    return;
+  }
+  
+  const lr = sh.getLastRow();
+  if (lr < 2) {
+    ui.alert("No hay décimo partido configurado.");
+    return;
+  }
+  
+  const data = sh.getRange(2, 1, lr - 1, 7).getValues();
+  let removed = false;
+  
+  for (let i = 0; i < data.length; i++) {
+    if (Number(data[i][0]) === Number(jornada)) {
+      sh.deleteRow(i + 2);
+      removed = true;
+      break;
+    }
+  }
+  
+  if (removed) {
+    ui.alert(`✅ Décimo partido eliminado para jornada ${jornada}.`);
+  } else {
+    ui.alert(`No había décimo partido configurado para jornada ${jornada}.`);
+  }
+}
+
+/***************
+ * CAPTURAR MARCADOR DEL DÉCIMO PARTIDO
+ ***************/
+function uiCapturarMarcadorDecimoPartido() {
+  const ui = SpreadsheetApp.getUi();
+  const jornada = Number(getConfig_("JornadaActual")) || 1;
+  
+  const decimoPartido = getDecimoPartidoPorJornada_(jornada);
+  
+  if (!decimoPartido || !decimoPartido.local || !decimoPartido.visitante) {
+    ui.alert("No hay décimo partido configurado para esta jornada.");
+    return;
+  }
+  
+  const resp = ui.prompt(
+    "Capturar Marcador - Décimo Partido",
+    `${decimoPartido.local} vs ${decimoPartido.visitante}\n\nIngresa el marcador final (ejemplo: 2-1):`,
+    ui.ButtonSet.OK_CANCEL
+  );
+  
+  if (resp.getSelectedButton() !== ui.Button.OK) return;
+  
+  const marcador = resp.getResponseText().trim();
+  
+  if (!marcador || !marcador.includes("-")) {
+    ui.alert("⛔ Formato inválido. Usa formato: 2-1");
+    return;
+  }
+  
+  // Agregar el resultado a la hoja PARTIDOS para que se calculen puntos
+  const ss = SpreadsheetApp.getActive();
+  const shPar = ss.getSheetByName(SHEETS.PARTIDOS);
+  
+  // Buscar si ya existe
+  const lr = shPar.getLastRow();
+  let found = false;
+  
+  if (lr >= 2) {
+    const data = shPar.getRange(2, 1, lr - 1, 6).getValues();
+    for (let i = 0; i < data.length; i++) {
+      const jor = Number(data[i][0]);
+      const local = String(data[i][2] || "").trim();
+      const visit = String(data[i][3] || "").trim();
+      
+      if (jor === jornada && 
+          normalizeTeam_(local) === normalizeTeam_(decimoPartido.local) && 
+          normalizeTeam_(visit) === normalizeTeam_(decimoPartido.visitante)) {
+        // Actualizar marcador
+        const res = calcResFromMarcador_(marcador);
+        shPar.getRange(i + 2, 5).setValue(marcador); // MARCADOR
+        shPar.getRange(i + 2, 6).setValue(res || "");  // RES
+        found = true;
+        break;
+      }
+    }
+  }
+  
+  if (!found) {
+    // Agregar nuevo partido a PARTIDOS
+    const res = calcResFromMarcador_(marcador);
+    shPar.appendRow([jornada, decimoPartido.fecha || "", decimoPartido.local, decimoPartido.visitante, marcador, res || ""]);
+  }
+  
+  // Recalcular puntos
+  calcularPuntosParaJornada_(jornada);
+  actualizarTablaGeneral();
+  
+  ui.alert(`✅ Marcador capturado: ${marcador}\nResultado: ${calcResFromMarcador_(marcador) || "?"}\nPuntos recalculados.`);
+}
+
+function getDecimoPartidoPorJornada_(jornada) {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEETS.DECIMO_PARTIDO);
+  
+  if (!sh) return null;
+  
+  const lr = sh.getLastRow();
+  if (lr < 2) return null;
+  
+  const data = sh.getRange(2, 1, lr - 1, 7).getValues();
+  
+  for (const r of data) {
+    if (Number(r[0]) === Number(jornada)) {
+      return {
+        liga: String(r[1] || ""),
+        local: String(r[2] || ""),
+        visitante: String(r[3] || ""),
+        fecha: parseDateSafe_(r[4]),
+        logoLocal: String(r[5] || ""),
+        logoVisit: String(r[6] || ""),
+      };
+    }
+  }
+  
+  return null;
+}
+
+/***************
+ * ACTUALIZAR HOJA DE IMPRESIÓN
+ * Llena automáticamente la hoja PRINT con los 10 partidos
+ ***************/
+function actualizarHojaImpresion() {
+  const ss = SpreadsheetApp.getActive();
+  const jornada = Number(getConfig_("JornadaActual")) || 1;
+  
+  // Obtener o crear hoja PRINT
+  let shPrint = ss.getSheetByName(SHEETS.PRINT);
+  if (!shPrint) {
+    shPrint = ss.insertSheet(SHEETS.PRINT);
+  }
+  
+  // Obtener partidos de Liga MX
+  const partidosLigaMX = getPartidosPorJornada_(jornada);
+  
+  // Obtener décimo partido si existe
+  const decimoPartido = getDecimoPartidoPorJornada_(jornada);
+  
+  // Combinar partidos (máximo 10)
+  const todosPartidos = [];
+  
+  // Agregar partidos de Liga MX (máximo 9)
+  for (let i = 0; i < Math.min(9, partidosLigaMX.length); i++) {
+    todosPartidos.push({
+      local: partidosLigaMX[i].local,
+      visitante: partidosLigaMX[i].visitante
+    });
+  }
+  
+  // Agregar décimo partido si existe
+  if (decimoPartido && decimoPartido.local && decimoPartido.visitante) {
+    todosPartidos.push({
+      local: decimoPartido.local,
+      visitante: decimoPartido.visitante
+    });
+  }
+  
+  // Rellenar con espacios vacíos si hay menos de 10 partidos
+  while (todosPartidos.length < 10) {
+    todosPartidos.push({ local: "", visitante: "" });
+  }
+  
+  // Llenar primera sección: B2:B11 (locales) y D2:D11 (visitantes)
+  const locales1 = todosPartidos.map(p => [p.local]);
+  const visitantes1 = todosPartidos.map(p => [p.visitante]);
+  
+  shPrint.getRange("B2:B11").setValues(locales1);
+  shPrint.getRange("D2:D11").setValues(visitantes1);
+  
+  // Llenar segunda sección: B13:B22 (locales) y D13:D22 (visitantes)
+  shPrint.getRange("B13:B22").setValues(locales1);
+  shPrint.getRange("D13:D22").setValues(visitantes1);
+  
+  // Copiar el rango A1:E22 a 5 ubicaciones adicionales
+  const rangoOriginal = shPrint.getRange("A1:E22");
+  const valores = rangoOriginal.getValues();
+  const formatos = rangoOriginal.getBackgrounds();
+  const fontWeights = rangoOriginal.getFontWeights();
+  const fontSizes = rangoOriginal.getFontSizes();
+  
+  // Definir las ubicaciones de destino
+  const destinos = [
+    "G1:K22",   // Primera copia
+    "M1:Q22",   // Segunda copia
+    "S1:W22",   // Tercera copia (nueva)
+    "A24:E45",  // Cuarta copia
+    "G24:K45",  // Quinta copia
+    "M24:Q45",  // Sexta copia
+    "S24:W45"   // Séptima copia (nueva)
+  ];
+  
+  // Copiar a cada destino
+  for (const destino of destinos) {
+    const rangoDest = shPrint.getRange(destino);
+    rangoDest.setValues(valores);
+    rangoDest.setBackgrounds(formatos);
+    rangoDest.setFontWeights(fontWeights);
+    rangoDest.setFontSizes(fontSizes);
+  }
+  
+  SpreadsheetApp.getUi().alert(`✅ Hoja de impresión actualizada\n\n${todosPartidos.filter(p => p.local).length} partidos cargados para la jornada ${jornada}.\n\nSe crearon 8 copias (1 original + 7 copias) del formato.`);
+}
+
+
 
