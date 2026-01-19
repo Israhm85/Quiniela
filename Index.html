@@ -167,6 +167,18 @@
       margin-bottom:6px;
     }
     
+    /* Campo faltante - marcado en rojo */
+    .field-missing{
+      border:2px solid var(--bad) !important;
+      animation:shake 0.3s ease;
+    }
+    
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+    
     /* ===== RESPONSIVE DESIGN ===== */
     
     /* Tablets and smaller desktops (768px - 1024px) */
@@ -581,6 +593,9 @@ function submitAll(){
   const saveMsg = document.getElementById("saveMsg");
   saveMsg.innerHTML = "Guardando…";
 
+  // Limpiar marcas rojas de campos faltantes previos
+  document.querySelectorAll('.field-missing').forEach(el => el.classList.remove('field-missing'));
+
   // Validación: Verificar que SESSION.partidos esté poblado
   if(!SESSION.partidos || SESSION.partidos.length === 0){
     saveMsg.innerHTML = `<span class="bad">⛔ Error: No hay partidos cargados. Intenta recargar la página.</span>`;
@@ -590,6 +605,7 @@ function submitAll(){
 
   const picks1 = [];
   const picks2 = [];
+  const missingFields = []; // Para rastrear campos faltantes
 
   SESSION.partidos.forEach((p, idx)=>{
     // entry 1
@@ -601,7 +617,7 @@ function submitAll(){
       gl = (parts[0]||"").trim();
       gv = (parts[1]||"").trim();
     }
-    picks1.push({ local:p.local, visit:p.visit, pick, gl, gv });
+    picks1.push({ local:p.local, visit:p.visit, pick, gl, gv, idx, entry:1 });
 
     // entry 2
     pick = (document.getElementById(`pick_${idx}_2`)?.value || "").trim();
@@ -612,7 +628,7 @@ function submitAll(){
       gl = (parts[0]||"").trim();
       gv = (parts[1]||"").trim();
     }
-    picks2.push({ local:p.local, visit:p.visit, pick, gl, gv });
+    picks2.push({ local:p.local, visit:p.visit, pick, gl, gv, idx, entry:2 });
   });
 
   // Validación frontend: Verificar que hay al menos un pick válido seleccionado
@@ -624,7 +640,69 @@ function submitAll(){
   if(validPicks1.length === 0 && validPicks2.length === 0){
     saveMsg.innerHTML = `<span class="bad">⛔ No hay picks para guardar. Selecciona al menos un resultado (Local/Empate/Visitante) en Entry 1 o Entry 2.</span>`;
     console.warn("No se encontraron picks válidos. Entry 1:", validPicks1.length, "Entry 2:", validPicks2.length);
+    
+    // Marcar todos los campos vacíos en rojo
+    SESSION.partidos.forEach((p, idx)=>{
+      const pick1 = document.getElementById(`pick_${idx}_1`);
+      const pick2 = document.getElementById(`pick_${idx}_2`);
+      
+      if(pick1 && (!pick1.value || pick1.value === "")){
+        pick1.classList.add('field-missing');
+        missingFields.push(`Partido ${idx+1} - Entry 1`);
+      }
+      if(pick2 && (!pick2.value || pick2.value === "")){
+        pick2.classList.add('field-missing');
+        missingFields.push(`Partido ${idx+1} - Entry 2`);
+      }
+    });
+    
+    // Hacer scroll al primer campo faltante
+    const firstMissing = document.querySelector('.field-missing');
+    if(firstMissing){
+      firstMissing.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      firstMissing.focus();
+    }
+    
     return;
+  }
+
+  // Verificar si hay campos incompletos (algunos picks pero no todos)
+  // Solo marcar en rojo si al menos uno de los entries tiene algún pick seleccionado
+  const hasAnyPick1 = picks1.some(p => p.pick && VALID_PICK_VALUES.includes(p.pick.toUpperCase()));
+  const hasAnyPick2 = picks2.some(p => p.pick && VALID_PICK_VALUES.includes(p.pick.toUpperCase()));
+  
+  if(hasAnyPick1){
+    picks1.forEach(p => {
+      if(!p.pick || !VALID_PICK_VALUES.includes(p.pick.toUpperCase())){
+        const pickEl = document.getElementById(`pick_${p.idx}_1`);
+        if(pickEl && !pickEl.disabled){
+          pickEl.classList.add('field-missing');
+          missingFields.push(`${p.local} vs ${p.visit} - Entry 1`);
+        }
+      }
+    });
+  }
+  
+  if(hasAnyPick2){
+    picks2.forEach(p => {
+      if(!p.pick || !VALID_PICK_VALUES.includes(p.pick.toUpperCase())){
+        const pickEl = document.getElementById(`pick_${p.idx}_2`);
+        if(pickEl && !pickEl.disabled){
+          pickEl.classList.add('field-missing');
+          missingFields.push(`${p.local} vs ${p.visit} - Entry 2`);
+        }
+      }
+    });
+  }
+  
+  // Si hay campos faltantes, mostrar advertencia pero permitir guardar los completos
+  if(missingFields.length > 0){
+    console.warn("Campos faltantes detectados:", missingFields);
+    // Hacer scroll al primer campo faltante
+    const firstMissing = document.querySelector('.field-missing');
+    if(firstMissing){
+      firstMissing.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   }
 
   // Enviar ambos entries en una sola llamada (backend espera picks1 y picks2 juntos)
@@ -640,9 +718,15 @@ function submitAll(){
       const r1 = detail.entry1 || { created:0, updated:0, blocked:0 };
       const r2 = detail.entry2 || { created:0, updated:0, blocked:0 };
       
+      // Mensaje de éxito con ánimo
+      const totalSaved = r1.created + r1.updated + r2.created + r2.updated;
       saveMsg.innerHTML =
-        `<span class="ok">✅ Guardado: Entry 1 (${r1.created+r1.updated}) · Entry 2 (${r2.created+r2.updated})</span>
-         <div class="small">Bloqueados por lock: ${ (r1.blocked||0) + (r2.blocked||0) }</div>`;
+        `<span class="ok" style="font-size:18px;font-weight:900">🎉 ¡Tu quiniela ha sido guardada, suerte!!!</span>
+         <div class="small" style="margin-top:6px">Guardado: Entry 1 (${r1.created+r1.updated}) · Entry 2 (${r2.created+r2.updated})</div>
+         ${(r1.blocked||0) + (r2.blocked||0) > 0 ? `<div class="small">Bloqueados por lock: ${ (r1.blocked||0) + (r2.blocked||0) }</div>` : ''}`;
+      
+      // Limpiar marcas rojas después de guardar exitosamente
+      document.querySelectorAll('.field-missing').forEach(el => el.classList.remove('field-missing'));
     })
     .withFailureHandler(err=>{
       saveMsg.innerHTML = `<span class="bad">⛔ Error de conexión: ${esc(err?.message || "intenta de nuevo")}</span>`;
