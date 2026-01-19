@@ -134,7 +134,61 @@ function registrarJugador_(nombre) {
   const id = nextJugadorId_(sh);
   const token = Utilities.getUuid();
   sh.appendRow([id, nombre, token, "SI", "NO", new Date()]);
+  
+  // Setup checkbox for PAGADO column (column 5)
+  const newRow = sh.getLastRow();
+  setupCheckboxForPagado_(sh, newRow);
+  
   return { ok:true, id, token };
+}
+
+/**
+ * Setup checkbox data validation for PAGADO column
+ */
+function setupCheckboxForPagado_(sheet, row) {
+  const pagadoCol = 5; // Column E (PAGADO)
+  const cell = sheet.getRange(row, pagadoCol);
+  
+  // Create checkbox validation with checked="SI" and unchecked="NO"
+  const rule = SpreadsheetApp.newDataValidation()
+    .requireCheckbox("SI", "NO")
+    .setAllowInvalid(false)
+    .build();
+  
+  cell.setDataValidation(rule);
+  
+  // Set initial value to unchecked (NO)
+  cell.setValue("NO");
+}
+
+/**
+ * Batch setup checkboxes for all existing players in JUGADORES sheet
+ * Run this manually once to convert existing SI/NO values to checkboxes
+ */
+function setupAllCheckboxesForPagado() {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEETS.JUGADORES);
+  const lr = sh.getLastRow();
+  
+  if (lr < 2) {
+    Logger.log("No players to setup");
+    return;
+  }
+  
+  const pagadoCol = 5; // Column E (PAGADO)
+  const range = sh.getRange(2, pagadoCol, lr - 1, 1);
+  
+  // Create checkbox validation
+  const rule = SpreadsheetApp.newDataValidation()
+    .requireCheckbox("SI", "NO")
+    .setAllowInvalid(false)
+    .build();
+  
+  // Apply to all player rows
+  range.setDataValidation(rule);
+  
+  Logger.log(`Setup checkboxes for ${lr - 1} players`);
+  SpreadsheetApp.getUi().alert(`✅ Checkboxes configurados para ${lr - 1} jugadores en la columna PAGADO`);
 }
 
 function nextJugadorId_(shJug) {
