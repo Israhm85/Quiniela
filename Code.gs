@@ -1394,6 +1394,269 @@ function importarCalendarioESPN() {
   }
   SpreadsheetApp.getUi().alert(mensaje);
 }
+
+/***************
+ * SYNC MARCADORES DESDE ESPN
+ * Actualiza marcadores de partidos ya importados usando la API de ESPN
+ ***************/
+function syncMarcadoresESPN() {
+  const ss = SpreadsheetApp.getActive();
+  const shPar = ss.getSheetByName(SHEETS.PARTIDOS);
+  const jornada = Number(getConfig_("JornadaActual")) || 1;
+  
+  // Obtener fechas de la jornada actual
+  const lr = shPar.getLastRow();
+  if (lr < 2) {
+    SpreadsheetApp.getUi().alert("No hay partidos en la hoja PARTIDOS.");
+    return;
+  }
+  
+  const data = shPar.getRange(2, 1, lr - 1, 6).getValues();
+  const partidosJornada = [];
+  
+  for (let i = 0; i < data.length; i++) {
+    const row = data[i];
+    if (Number(row[0]) === jornada) {
+      partidosJornada.push({
+        rowIndex: i + 2,
+        jornada: row[0],
+        fecha: row[1],
+        local: String(row[2] || "").trim(),
+        visitante: String(row[3] || "").trim(),
+        marcadorActual: String(row[4] || "").trim(),
+        resActual: String(row[5] || "").trim()
+      });
+    }
+  }
+  
+  if (!partidosJornada.length) {
+    SpreadsheetApp.getUi().alert(`No hay partidos para la jornada ${jornada}.`);
+    return;
+  }
+  
+  // Obtener rango de fechas para consultar ESPN
+  const fechas = partidosJornada.map(p => p.fecha).filter(f => f instanceof Date);
+  if (!fechas.length) {
+    SpreadsheetApp.getUi().alert("Los partidos no tienen fechas válidas.");
+    return;
+  }
+  
+  const minFecha = new Date(Math.min(...fechas.map(f => f.getTime())));
+  const maxFecha = new Date(Math.max(...fechas.map(f => f.getTime())));
+  
+  // Agregar margen de 1 día antes y después
+  minFecha.setDate(minFecha.getDate() - 1);
+  maxFecha.setDate(maxFecha.getDate() + 1);
+  
+  const desde = Utilities.formatDate(minFecha, Session.getScriptTimeZone(), "yyyyMMdd");
+  const hasta = Utilities.formatDate(maxFecha, Session.getScriptTimeZone(), "yyyyMMdd");
+  
+  const url = `https://site.api.espn.com/apis/site/v2/sports/soccer/mex.1/scoreboard?dates=${desde}-${hasta}&limit=1000`;
+  
+  const resp = UrlFetchApp.fetch(url, {
+    muteHttpExceptions: true,
+    headers: { "User-Agent": "Mozilla/5.0" }
+  });
+  
+  if (resp.getResponseCode() !== 200) {
+    SpreadsheetApp.getUi().alert(`Error ESPN: HTTP ${resp.getResponseCode()}`);
+    return;
+  }
+  
+  const json = JSON.parse(resp.getContentText());
+  const events = json.events || [];
+  
+  if (!events.length) {
+    SpreadsheetApp.getUi().alert("No encontré partidos en ESPN para ese rango de fechas.");
+    return;
+  }
+  
+  let actualizados = 0;
+  let sinCambios = 0;
+  
+  for (const partido of partidosJornada) {
+    // Buscar el partido en los eventos de ESPN
+    const localNorm = normalizeTeam_(partido.local);
+    const visitNorm = normalizeTeam_(partido.visitante);
+    
+    let found = null;
+    for (const ev of events) {
+      const comp = (ev.competitions && ev.competitions[0]) ? ev.competitions[0] : null;
+      if (!comp) continue;
+      
+      const competitors = comp.competitors || [];
+      const home = competitors.find(c => c.homeAway === "home");
+      const away = competitors.find(c => c.homeAway === "away");
+      if (!home || !away) continue;
+      
+      const espnLocal = home.team?.shortDisplayName || home.team?.displayName || "";
+      const espnVisit = away.team?.shortDisplayName || away.team?.displayName || "";
+      
+      if (normalizeTeam_(espnLocal) === localNorm && normalizeTeam_(espnVisit) === visitNorm) {
+        found = { comp, home, away };
+        break;
+      }
+    }
+    
+    if (!found) continue;
+    
+    const { comp, home, away } = found;
+    
+    // Verificar si el partido ha terminado
+    const status = comp.status?.type?.completed || false;
+    if (!status) {
+      sinCambios++;
+      continue;
+    }
+    
+    // Obtener marcador
+    const scoreHome = home.score || "0";
+    const scoreAway = away.score || "0";
+    const marcador = `${scoreHome}-${scoreAway}`;
+    
+    // Si ya tiene el mismo marcador, no actualizar
+    if (partido.marcadorActual === marcador) {
+      sinCambios++;
+      continue;
+    }
+    
+    // Calcular resultado
+    const res = calcResFromMarcador_(marcador);
+    
+    // Actualizar en la hoja
+    shPar.getRange(partido.rowIndex, 5).setValue(marcador);
+    shPar.getRange(partido.rowIndex, 6).setValue(res || "");
+    actualizados++;
+  }
+  
+  // Recalcular puntos si hubo actualizaciones
+  if (actualizados > 0) {
+    calcularPuntosParaJornada_(jornada);
+    actualizarTablaGeneral();
+  }
+  
+  let mensaje = `✅ Sync completado\n\n`;
+  mensaje += `📊 Jornada ${jornada}:\n`;
+  mensaje += `- Marcadores actualizados: ${actualizados}\n`;
+  mensaje += `- Sin cambios: ${sinCambios}\n`;
+  mensaje += `- No encontrados: ${partidosJornada.length - actualizados - sinCambios}`;
+  
+  if (actualizados > 0) {
+    mensaje += `\n\n✅ Puntos recalculados automáticamente.`;
+  }
+  
+  SpreadsheetApp.getUi().alert(mensaje);
+}
+
+/***************
+ * PROGRAMACIÓN AUTOMÁTICA DE SYNC
+ ***************/
+function programarSyncPorCalendario() {
+  // Eliminar triggers existentes de sync
+  desactivarAutoSyncMarcadores();
+  
+  const ss = SpreadsheetApp.getActive();
+  const shPar = ss.getSheetByName(SHEETS.PARTIDOS);
+  const jornada = Number(getConfig_("JornadaActual")) || 1;
+  
+  // Obtener fechas de partidos de la jornada actual
+  const lr = shPar.getLastRow();
+  if (lr < 2) {
+    SpreadsheetApp.getUi().alert("No hay partidos en la hoja PARTIDOS.");
+    return;
+  }
+  
+  const data = shPar.getRange(2, 1, lr - 1, 2).getValues();
+  const fechas = [];
+  
+  for (const row of data) {
+    if (Number(row[0]) === jornada && row[1] instanceof Date) {
+      fechas.push(row[1]);
+    }
+  }
+  
+  if (!fechas.length) {
+    SpreadsheetApp.getUi().alert(`No hay partidos con fecha para la jornada ${jornada}.`);
+    return;
+  }
+  
+  // Programar sync cada 30 minutos durante los días de partidos
+  const minFecha = new Date(Math.min(...fechas.map(f => f.getTime())));
+  const maxFecha = new Date(Math.max(...fechas.map(f => f.getTime())));
+  
+  // Agregar 4 horas después del último partido
+  maxFecha.setHours(maxFecha.getHours() + 4);
+  
+  const ahora = new Date();
+  let triggerCount = 0;
+  
+  // Crear triggers cada 30 minutos desde ahora hasta el final de los partidos
+  let current = new Date(Math.max(ahora.getTime(), minFecha.getTime() - 60 * 60 * 1000)); // 1 hora antes del primer partido
+  
+  while (current <= maxFecha && triggerCount < 20) { // Límite de 20 triggers por seguridad
+    ScriptApp.newTrigger("syncMarcadoresESPN")
+      .timeBased()
+      .at(current)
+      .create();
+    
+    triggerCount++;
+    current = new Date(current.getTime() + 30 * 60 * 1000); // Cada 30 minutos
+  }
+  
+  SpreadsheetApp.getUi().alert(`✅ Programados ${triggerCount} syncs automáticos\n\nDesde: ${Utilities.formatDate(minFecha, Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm")}\nHasta: ${Utilities.formatDate(maxFecha, Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm")}\n\nCada 30 minutos durante los partidos.`);
+}
+
+function desactivarAutoSyncMarcadores() {
+  const triggers = ScriptApp.getProjectTriggers();
+  let count = 0;
+  
+  for (const trigger of triggers) {
+    if (trigger.getHandlerFunction() === "syncMarcadoresESPN") {
+      ScriptApp.deleteTrigger(trigger);
+      count++;
+    }
+  }
+  
+  if (count > 0) {
+    SpreadsheetApp.getUi().alert(`✅ Se eliminaron ${count} trigger(s) de sync automático.`);
+  } else {
+    SpreadsheetApp.getUi().alert("No había triggers de sync activos.");
+  }
+}
+
+function activarProgramacionDiariaSync() {
+  // Eliminar trigger diario existente si lo hay
+  desactivarProgramacionDiariaSync();
+  
+  // Crear trigger que se ejecuta todos los días a las 10am
+  ScriptApp.newTrigger("syncMarcadoresESPN")
+    .timeBased()
+    .atHour(10)
+    .everyDays(1)
+    .create();
+  
+  SpreadsheetApp.getUi().alert("✅ Programación diaria activada\n\nEl sync se ejecutará automáticamente todos los días a las 10:00 AM.");
+}
+
+function desactivarProgramacionDiariaSync() {
+  const triggers = ScriptApp.getProjectTriggers();
+  let count = 0;
+  
+  for (const trigger of triggers) {
+    if (trigger.getHandlerFunction() === "syncMarcadoresESPN" && 
+        trigger.getEventType() === ScriptApp.EventType.CLOCK) {
+      ScriptApp.deleteTrigger(trigger);
+      count++;
+    }
+  }
+  
+  if (count > 0) {
+    SpreadsheetApp.getUi().alert(`✅ Se desactivó la programación diaria (${count} trigger(s) eliminado(s)).`);
+  } else {
+    SpreadsheetApp.getUi().alert("No había programación diaria activa.");
+  }
+}
+
 function existingPartidosKeySet_() {
   const ss = SpreadsheetApp.getActive();
   const sh = ss.getSheetByName(SHEETS.PARTIDOS);
