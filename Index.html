@@ -605,7 +605,6 @@ function submitAll(){
 
   const picks1 = [];
   const picks2 = [];
-  const missingFields = []; // Para rastrear campos faltantes
 
   SESSION.partidos.forEach((p, idx)=>{
     // entry 1
@@ -617,6 +616,7 @@ function submitAll(){
       gl = (parts[0]||"").trim();
       gv = (parts[1]||"").trim();
     }
+    // idx y entry son para tracking interno, no se envían al backend
     picks1.push({ local:p.local, visit:p.visit, pick, gl, gv, idx, entry:1 });
 
     // entry 2
@@ -628,6 +628,7 @@ function submitAll(){
       gl = (parts[0]||"").trim();
       gv = (parts[1]||"").trim();
     }
+    // idx y entry son para tracking interno, no se envían al backend
     picks2.push({ local:p.local, visit:p.visit, pick, gl, gv, idx, entry:2 });
   });
 
@@ -648,11 +649,9 @@ function submitAll(){
       
       if(pick1 && (!pick1.value || pick1.value === "")){
         pick1.classList.add('field-missing');
-        missingFields.push(`Partido ${idx+1} - Entry 1`);
       }
       if(pick2 && (!pick2.value || pick2.value === "")){
         pick2.classList.add('field-missing');
-        missingFields.push(`Partido ${idx+1} - Entry 2`);
       }
     });
     
@@ -677,7 +676,6 @@ function submitAll(){
         const pickEl = document.getElementById(`pick_${p.idx}_1`);
         if(pickEl && !pickEl.disabled){
           pickEl.classList.add('field-missing');
-          missingFields.push(`${p.local} vs ${p.visit} - Entry 1`);
         }
       }
     });
@@ -689,19 +687,18 @@ function submitAll(){
         const pickEl = document.getElementById(`pick_${p.idx}_2`);
         if(pickEl && !pickEl.disabled){
           pickEl.classList.add('field-missing');
-          missingFields.push(`${p.local} vs ${p.visit} - Entry 2`);
         }
       }
     });
   }
   
-  // Si hay campos faltantes, mostrar advertencia pero permitir guardar los completos
-  if(missingFields.length > 0){
-    console.warn("Campos faltantes detectados:", missingFields);
-    // Hacer scroll al primer campo faltante
+  // Si hay campos faltantes, hacer scroll al primero
+  const hasMissingFields = document.querySelectorAll('.field-missing').length > 0;
+  if(hasMissingFields){
     const firstMissing = document.querySelector('.field-missing');
     if(firstMissing){
       firstMissing.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      firstMissing.focus();
     }
   }
 
@@ -719,7 +716,6 @@ function submitAll(){
       const r2 = detail.entry2 || { created:0, updated:0, blocked:0 };
       
       // Mensaje de éxito con ánimo
-      const totalSaved = r1.created + r1.updated + r2.created + r2.updated;
       saveMsg.innerHTML =
         `<span class="ok" style="font-size:18px;font-weight:900">🎉 ¡Tu quiniela ha sido guardada, suerte!!!</span>
          <div class="small" style="margin-top:6px">Guardado: Entry 1 (${r1.created+r1.updated}) · Entry 2 (${r2.created+r2.updated})</div>
