@@ -519,9 +519,19 @@ function fillPicksInForm(picks, entry){
     const marcEl = document.getElementById(`marc_${idx}_${entry}`);
 
     if(pickEl && saved.pick) pickEl.value = saved.pick;
-    // Validate marcador values are present (can be numbers or numeric strings)
-    if(marcEl && saved.gl != null && saved.gv != null && String(saved.gl).trim() !== "" && String(saved.gv).trim() !== ""){
-      marcEl.value = `${saved.gl}-${saved.gv}`;
+    
+    // Validar que gl y gv sean valores numéricos válidos (no timestamps ni otros textos)
+    if(marcEl && saved.gl != null && saved.gv != null){
+      const glStr = String(saved.gl).trim();
+      const gvStr = String(saved.gv).trim();
+      
+      // Verificar que son valores cortos (máximo 2 dígitos) y numéricos
+      // Esto previene que timestamps u otros textos largos se muestren como marcador
+      if(glStr !== "" && gvStr !== "" && 
+         glStr.length <= 2 && gvStr.length <= 2 &&
+         !isNaN(Number(glStr)) && !isNaN(Number(gvStr))){
+        marcEl.value = `${glStr}-${gvStr}`;
+      }
     }
   });
 }

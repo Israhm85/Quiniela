@@ -686,9 +686,14 @@ function api_getMyPicks(token, jornada, entry) {
 
     let gl="", gv="";
     const pm = String(r[7]||"").trim();
-    if (pm && pm.includes("-")) {
+    // Validar que el marcador tenga formato correcto (no timestamps u otros textos)
+    if (pm && pm.includes("-") && pm.length < 10) {  // Máximo "99-99" son 5 caracteres, dejamos margen
       const parts = pm.split("-");
-      gl = parts[0]; gv = parts[1];
+      // Solo aceptar si ambas partes son numéricas y cortas
+      if(parts.length === 2 && parts[0].length <= 2 && parts[1].length <= 2 &&
+         !isNaN(Number(parts[0])) && !isNaN(Number(parts[1]))){
+        gl = parts[0]; gv = parts[1];
+      }
     }
 
     map[key] = { pick: String(r[6]||""), gl, gv };
