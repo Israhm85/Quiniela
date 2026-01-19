@@ -15,6 +15,7 @@ const SHEETS = {
   PRONOSTICOS: "PRONOSTICOS",
   TABLA: "TABLA",
   EQUIPOS: "EQUIPOS", // ✅ NUEVO
+  DECIMO_PARTIDO: "DECIMO_PARTIDO", // ✅ DÉCIMO PARTIDO
 };
 
 
@@ -42,6 +43,9 @@ function onOpen() {
     .addItem("🧠 Rellenar jornadas faltantes", "rellenarJornadasFaltantes")
     .addItem("🧹 Normalizar jornadas a 17", "normalizarJornadasLigaMX")
     .addItem("⚽ Sync marcadores (ESPN)", "syncMarcadoresESPN")
+    .addSeparator()
+    .addItem("🌍 Seleccionar décimo partido", "uiSeleccionarDecimoPartido")
+    .addItem("🗑️ Quitar décimo partido", "quitarDecimoPartido")
     .addSeparator()
     .addItem("🗓️ Programar Sync por calendario (hoy/mañana)", "programarSyncPorCalendario")
     .addItem("🧹 Borrar triggers de Sync", "desactivarAutoSyncMarcadores")
@@ -73,6 +77,11 @@ function setupInicial() {
   if (!shEq) shEq = ss.insertSheet(SHEETS.EQUIPOS);
   ensureHeaders_(shEq, ["NOMBRE", "LOGO"]);
 
+  // ✅ NUEVA hoja para décimo partido
+  let shDecimo = ss.getSheetByName(SHEETS.DECIMO_PARTIDO);
+  if (!shDecimo) shDecimo = ss.insertSheet(SHEETS.DECIMO_PARTIDO);
+  ensureHeaders_(shDecimo, ["JORNADA", "LIGA", "LOCAL", "VISITANTE", "FECHA", "LOGO_LOCAL", "LOGO_VISITANTE"]);
+
   const shCfg = ss.getSheetByName(SHEETS.CONFIG);
   const map = readConfigMap_(shCfg);
 
@@ -91,7 +100,7 @@ function setupInicial() {
   if (shCfg.getLastRow() > 1) shCfg.getRange(2, 1, shCfg.getLastRow() - 1, 2).clearContent();
   shCfg.getRange(2, 1, defaults.length, 2).setValues(defaults);
 
-  SpreadsheetApp.getUi().alert("Setup listo ✅ (incluye ENTRY 2x1 + EQUIPOS logos + sistema de pagos + % configurables).");
+  SpreadsheetApp.getUi().alert("Setup listo ✅ (incluye ENTRY 2x1 + EQUIPOS logos + sistema de pagos + % configurables + décimo partido opcional).");
 }
 
 
@@ -207,6 +216,16 @@ function generarPronosticosJornadaConfig() {
 
   const partidos = getPartidosPorJornada_(jornada);
   if (!partidos.length) return SpreadsheetApp.getUi().alert(`No hay partidos para jornada ${jornada}.`);
+  
+  // ✅ Agregar décimo partido si existe
+  const decimoPartido = getDecimoPartidoPorJornada_(jornada);
+  if (decimoPartido && decimoPartido.local && decimoPartido.visitante) {
+    partidos.push({
+      jornada: jornada,
+      local: decimoPartido.local,
+      visitante: decimoPartido.visitante
+    });
+  }
 
   const jugadores = getJugadoresActivos_();
   if (!jugadores.length) return SpreadsheetApp.getUi().alert("No hay jugadores activos.");
@@ -1028,39 +1047,70 @@ function getPartidosWebPorJornada_(jornada, lockMinutes) {
   const ss = SpreadsheetApp.getActive();
   const sh = ss.getSheetByName(SHEETS.PARTIDOS);
   const lr = sh.getLastRow();
-  if (lr < 2) return [];
-
+  
   const now = new Date();
-  const rows = sh.getRange(2,1,lr-1,6).getValues();
+  const partidos = [];
+  
+  // Obtener partidos de Liga MX
+  if (lr >= 2) {
+    const rows = sh.getRange(2,1,lr-1,6).getValues();
 
-  return rows
-    .filter(r => Number(r[0]) === Number(jornada))
-    .map(r => {
-      const fecha = parseDateSafe_(r[1]);
-      const local = String(r[2] || "");
-      const visit = String(r[3] || "");
-      const marcador = String(r[4] || "").trim();
+    rows
+      .filter(r => Number(r[0]) === Number(jornada))
+      .forEach(r => {
+        const fecha = parseDateSafe_(r[1]);
+        const local = String(r[2] || "");
+        const visit = String(r[3] || "");
+        const marcador = String(r[4] || "").trim();
 
-      let locked = false;
-      let reason = "";
+        let locked = false;
+        let reason = "";
 
-      if (marcador) { locked = true; reason = "MARCADOR"; }
-      else if (fecha) {
-        const lockTime = new Date(fecha.getTime() - lockMinutes*60*1000);
-        if (now >= lockTime) { locked = true; reason = "TIEMPO"; }
-      }
+        if (marcador) { locked = true; reason = "MARCADOR"; }
+        else if (fecha) {
+          const lockTime = new Date(fecha.getTime() - lockMinutes*60*1000);
+          if (now >= lockTime) { locked = true; reason = "TIEMPO"; }
+        }
 
-      return {
-        local, visit,
-        fechaTxt: fecha ? formatDate_(fecha) : "",
-        marcador,
-        locked, reason,
-        // ✅ escudos
-        logoLocal: getLigaMxLogoUrl_(local),
-        logoVisit: getLigaMxLogoUrl_(visit),
-      };
-    })
-    .filter(p => p.local && p.visit);
+        if (local && visit) {
+          partidos.push({
+            local, visit,
+            fechaTxt: fecha ? formatDate_(fecha) : "",
+            marcador,
+            locked, reason,
+            logoLocal: getLigaMxLogoUrl_(local),
+            logoVisit: getLigaMxLogoUrl_(visit),
+          });
+        }
+      });
+  }
+  
+  // ✅ Agregar décimo partido si existe
+  const decimoPartido = getDecimoPartidoPorJornada_(jornada);
+  if (decimoPartido && decimoPartido.local && decimoPartido.visitante) {
+    let locked = false;
+    let reason = "";
+    
+    if (decimoPartido.fecha) {
+      const lockTime = new Date(decimoPartido.fecha.getTime() - lockMinutes*60*1000);
+      if (now >= lockTime) { locked = true; reason = "TIEMPO"; }
+    }
+    
+    partidos.push({
+      local: decimoPartido.local,
+      visit: decimoPartido.visitante,
+      fechaTxt: decimoPartido.fecha ? formatDate_(decimoPartido.fecha) : "",
+      marcador: "", // No tiene marcador en tiempo real
+      locked, 
+      reason,
+      logoLocal: decimoPartido.logoLocal,
+      logoVisit: decimoPartido.logoVisit,
+      esDecimoPartido: true, // ✅ Marcador para identificarlo
+      liga: decimoPartido.liga,
+    });
+  }
+  
+  return partidos;
 }
 
 /***************
@@ -1767,4 +1817,243 @@ function normalizeTeam_(s) {
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .replace(/[^\w\s]/g, ""); // quita símbolos
 }
+
+/***************
+ * DÉCIMO PARTIDO - EQUIPOS PREDEFINIDOS
+ ***************/
+function getEquiposLaLiga_() {
+  return [
+    { nombre: "Real Madrid", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/86.png" },
+    { nombre: "Barcelona", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/83.png" },
+    { nombre: "Atlético Madrid", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/1068.png" },
+    { nombre: "Sevilla", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/243.png" },
+    { nombre: "Real Betis", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/244.png" },
+    { nombre: "Real Sociedad", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/243.png" },
+    { nombre: "Villarreal", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/94.png" },
+    { nombre: "Athletic Bilbao", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/81.png" },
+    { nombre: "Valencia", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/93.png" },
+    { nombre: "Getafe", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/3447.png" },
+    { nombre: "Osasuna", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/3448.png" },
+    { nombre: "Celta Vigo", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/3449.png" },
+    { nombre: "Rayo Vallecano", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/95.png" },
+    { nombre: "Mallorca", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/3452.png" },
+    { nombre: "Girona", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/3451.png" },
+    { nombre: "Alavés", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/3458.png" },
+    { nombre: "Las Palmas", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/3456.png" },
+    { nombre: "Espanyol", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/88.png" },
+    { nombre: "Leganés", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/7747.png" },
+    { nombre: "Valladolid", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/3457.png" },
+  ];
+}
+
+function getEquiposPremierLeague_() {
+  return [
+    { nombre: "Manchester City", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/382.png" },
+    { nombre: "Arsenal", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/359.png" },
+    { nombre: "Liverpool", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/364.png" },
+    { nombre: "Manchester United", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/360.png" },
+    { nombre: "Chelsea", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/363.png" },
+    { nombre: "Tottenham", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/367.png" },
+    { nombre: "Newcastle", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/361.png" },
+    { nombre: "Aston Villa", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/362.png" },
+    { nombre: "Brighton", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/331.png" },
+    { nombre: "West Ham", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/371.png" },
+    { nombre: "Everton", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/368.png" },
+    { nombre: "Crystal Palace", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/384.png" },
+    { nombre: "Fulham", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/370.png" },
+    { nombre: "Bournemouth", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/349.png" },
+    { nombre: "Brentford", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/337.png" },
+    { nombre: "Nottingham Forest", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/393.png" },
+    { nombre: "Wolves", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/380.png" },
+    { nombre: "Leicester City", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/375.png" },
+    { nombre: "Ipswich Town", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/373.png" },
+    { nombre: "Southampton", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/376.png" },
+  ];
+}
+
+/***************
+ * UI: SELECCIONAR DÉCIMO PARTIDO
+ ***************/
+function uiSeleccionarDecimoPartido() {
+  const ui = SpreadsheetApp.getUi();
+  
+  // Paso 1: Seleccionar liga
+  const ligaResp = ui.alert(
+    "Seleccionar Liga",
+    "¿Qué liga deseas usar para el décimo partido?",
+    ui.ButtonSet.YES_NO_CANCEL
+  );
+  
+  let liga = "";
+  if (ligaResp === ui.Button.YES) {
+    liga = "LALIGA";
+  } else if (ligaResp === ui.Button.NO) {
+    liga = "PREMIER";
+  } else {
+    return; // Cancelado
+  }
+  
+  // Obtener equipos según la liga
+  const equipos = liga === "LALIGA" ? getEquiposLaLiga_() : getEquiposPremierLeague_();
+  const nombresEquipos = equipos.map(e => e.nombre);
+  
+  // Paso 2: Seleccionar equipo local
+  const localResp = ui.prompt(
+    "Equipo Local",
+    `Escribe el nombre del equipo local (${liga}):\n\nDisponibles: ${nombresEquipos.join(", ")}`,
+    ui.ButtonSet.OK_CANCEL
+  );
+  
+  if (localResp.getSelectedButton() !== ui.Button.OK) return;
+  const localNombre = localResp.getResponseText().trim();
+  const localEquipo = equipos.find(e => normalizeTeam_(e.nombre) === normalizeTeam_(localNombre));
+  
+  if (!localEquipo) {
+    ui.alert(`⛔ No encontré el equipo "${localNombre}". Verifica el nombre.`);
+    return;
+  }
+  
+  // Paso 3: Seleccionar equipo visitante
+  const visitResp = ui.prompt(
+    "Equipo Visitante",
+    `Escribe el nombre del equipo visitante (${liga}):\n\nDisponibles: ${nombresEquipos.join(", ")}`,
+    ui.ButtonSet.OK_CANCEL
+  );
+  
+  if (visitResp.getSelectedButton() !== ui.Button.OK) return;
+  const visitNombre = visitResp.getResponseText().trim();
+  const visitEquipo = equipos.find(e => normalizeTeam_(e.nombre) === normalizeTeam_(visitNombre));
+  
+  if (!visitEquipo) {
+    ui.alert(`⛔ No encontré el equipo "${visitNombre}". Verifica el nombre.`);
+    return;
+  }
+  
+  if (normalizeTeam_(localNombre) === normalizeTeam_(visitNombre)) {
+    ui.alert("⛔ Los equipos deben ser diferentes.");
+    return;
+  }
+  
+  // Paso 4: Fecha (opcional)
+  const fechaResp = ui.prompt(
+    "Fecha del Partido (opcional)",
+    "Formato: MM/DD/YYYY HH:MM AM/PM (ejemplo: 01/25/2026 3:00 PM)\nDeja vacío si no sabes la fecha.",
+    ui.ButtonSet.OK_CANCEL
+  );
+  
+  let fechaObj = null;
+  if (fechaResp.getSelectedButton() === ui.Button.OK) {
+    const fechaStr = fechaResp.getResponseText().trim();
+    if (fechaStr) {
+      fechaObj = new Date(fechaStr);
+      if (isNaN(fechaObj.getTime())) {
+        ui.alert("⚠️ Fecha inválida, se guardará sin fecha.");
+        fechaObj = null;
+      }
+    }
+  }
+  
+  // Guardar en hoja DECIMO_PARTIDO
+  const jornada = Number(getConfig_("JornadaActual")) || 1;
+  guardarDecimoPartido_(jornada, liga, localEquipo.nombre, visitEquipo.nombre, fechaObj, localEquipo.logo, visitEquipo.logo);
+  
+  ui.alert(`✅ Décimo partido configurado:\n${localEquipo.nombre} vs ${visitEquipo.nombre}\nLiga: ${liga}\nJornada: ${jornada}`);
+}
+
+function guardarDecimoPartido_(jornada, liga, local, visitante, fecha, logoLocal, logoVisit) {
+  const ss = SpreadsheetApp.getActive();
+  let sh = ss.getSheetByName(SHEETS.DECIMO_PARTIDO);
+  if (!sh) sh = ss.insertSheet(SHEETS.DECIMO_PARTIDO);
+  
+  ensureHeaders_(sh, ["JORNADA", "LIGA", "LOCAL", "VISITANTE", "FECHA", "LOGO_LOCAL", "LOGO_VISITANTE"]);
+  
+  // Buscar si ya existe un décimo partido para esta jornada
+  const lr = sh.getLastRow();
+  let found = false;
+  
+  if (lr >= 2) {
+    const data = sh.getRange(2, 1, lr - 1, 7).getValues();
+    for (let i = 0; i < data.length; i++) {
+      if (Number(data[i][0]) === Number(jornada)) {
+        // Actualizar fila existente
+        sh.getRange(i + 2, 1, 1, 7).setValues([[jornada, liga, local, visitante, fecha || "", logoLocal, logoVisit]]);
+        found = true;
+        break;
+      }
+    }
+  }
+  
+  if (!found) {
+    // Agregar nueva fila
+    sh.appendRow([jornada, liga, local, visitante, fecha || "", logoLocal, logoVisit]);
+  }
+  
+  // Guardar logos en EQUIPOS para uso futuro
+  upsertEquipoLogo_(local, logoLocal);
+  upsertEquipoLogo_(visitante, logoVisit);
+}
+
+function quitarDecimoPartido() {
+  const ui = SpreadsheetApp.getUi();
+  const jornada = Number(getConfig_("JornadaActual")) || 1;
+  
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEETS.DECIMO_PARTIDO);
+  
+  if (!sh) {
+    ui.alert("No hay hoja de décimo partido.");
+    return;
+  }
+  
+  const lr = sh.getLastRow();
+  if (lr < 2) {
+    ui.alert("No hay décimo partido configurado.");
+    return;
+  }
+  
+  const data = sh.getRange(2, 1, lr - 1, 7).getValues();
+  let removed = false;
+  
+  for (let i = 0; i < data.length; i++) {
+    if (Number(data[i][0]) === Number(jornada)) {
+      sh.deleteRow(i + 2);
+      removed = true;
+      break;
+    }
+  }
+  
+  if (removed) {
+    ui.alert(`✅ Décimo partido eliminado para jornada ${jornada}.`);
+  } else {
+    ui.alert(`No había décimo partido configurado para jornada ${jornada}.`);
+  }
+}
+
+function getDecimoPartidoPorJornada_(jornada) {
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEETS.DECIMO_PARTIDO);
+  
+  if (!sh) return null;
+  
+  const lr = sh.getLastRow();
+  if (lr < 2) return null;
+  
+  const data = sh.getRange(2, 1, lr - 1, 7).getValues();
+  
+  for (const r of data) {
+    if (Number(r[0]) === Number(jornada)) {
+      return {
+        liga: String(r[1] || ""),
+        local: String(r[2] || ""),
+        visitante: String(r[3] || ""),
+        fecha: parseDateSafe_(r[4]),
+        logoLocal: String(r[5] || ""),
+        logoVisit: String(r[6] || ""),
+      };
+    }
+  }
+  
+  return null;
+}
+
 
