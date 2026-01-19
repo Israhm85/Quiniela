@@ -607,18 +607,46 @@ function bootstrap(){
         return;
       }
 
-      console.log("✅ Token found, showing form");
-      document.getElementById("registerCard").style.display = "none";
-      document.getElementById("formCard").style.display = "block";
-      document.getElementById("jorTitle").innerHTML = `Jornada ${r.jornada}`;
+      // 🔒 NUEVO: Validar que el token sigue siendo válido
+      console.log("🔍 Validating token with backend...");
+      google.script.run
+        .withSuccessHandler(tokenResult => {
+          console.log("🔍 Token validation result:", tokenResult);
+          
+          if(!tokenResult || !tokenResult.ok){
+            // Token inválido o jugador eliminado - limpiar y mostrar registro
+            console.warn("⚠️ Token inválido o jugador eliminado del sistema");
+            SESSION.token = null;
+            localStorage.removeItem("q_token");
+            document.getElementById("registerCard").style.display = "block";
+            document.getElementById("formCard").style.display = "none";
+            document.getElementById("regMsg").innerHTML = `<span class="small" style="color:#ff6b6b">Tu sesión expiró o fue removida. Por favor registra tu nombre nuevamente.</span>`;
+            return;
+          }
 
-      console.log("📝 Calling renderForm()");
-      renderForm();
-      console.log("📥 Calling loadMyPicks()");
-      loadMyPicks();
-      console.log("💰 Calling loadPrizePool()");
-      loadPrizePool();
-      console.log("✅ bootstrap() completed successfully");
+          // Token válido - mostrar formulario
+          console.log("✅ Token valid, showing form");
+          document.getElementById("registerCard").style.display = "none";
+          document.getElementById("formCard").style.display = "block";
+          document.getElementById("jorTitle").innerHTML = `Jornada ${r.jornada}`;
+
+          console.log("📝 Calling renderForm()");
+          renderForm();
+          console.log("📥 Calling loadMyPicks()");
+          loadMyPicks();
+          console.log("💰 Calling loadPrizePool()");
+          loadPrizePool();
+          console.log("✅ bootstrap() completed successfully");
+        })
+        .withFailureHandler(err => {
+          console.error("❌ Token validation error:", err);
+          // En caso de error, asumir token inválido
+          SESSION.token = null;
+          localStorage.removeItem("q_token");
+          document.getElementById("registerCard").style.display = "block";
+          document.getElementById("formCard").style.display = "none";
+        })
+        .api_loginByToken(SESSION.token);
     })
     .withFailureHandler(err=>{
       console.error("❌ api_bootstrap error:", err);
