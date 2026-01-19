@@ -366,6 +366,9 @@
 <script>
 let SESSION = { token:null, jornada:null, lockMinutes:10, partidos:[] };
 
+// Constantes para validación de picks
+const VALID_PICK_VALUES = ["L", "E", "V"];
+
 function esc(s){return String(s||"").replace(/[&<>"]/g,m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[m]))}
 
 /* ---------- TOKEN VALIDATION ---------- */
@@ -614,8 +617,8 @@ function submitAll(){
 
   // Validación frontend: Verificar que hay al menos un pick válido seleccionado
   // Un pick es válido si tiene selección de resultado (L/E/V)
-  const validPicks1 = picks1.filter(p => p.pick && ["L","E","V"].includes(p.pick.toUpperCase()));
-  const validPicks2 = picks2.filter(p => p.pick && ["L","E","V"].includes(p.pick.toUpperCase()));
+  const validPicks1 = picks1.filter(p => p.pick && VALID_PICK_VALUES.includes(p.pick.toUpperCase()));
+  const validPicks2 = picks2.filter(p => p.pick && VALID_PICK_VALUES.includes(p.pick.toUpperCase()));
 
   // Si no hay picks válidos en ninguno de los dos entries, mostrar error y NO llamar API
   if(validPicks1.length === 0 && validPicks2.length === 0){

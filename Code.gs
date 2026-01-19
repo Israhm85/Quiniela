@@ -711,11 +711,13 @@ function api_submit(payload) {
     // Legacy support: si viene 'entry' y 'picks', convertir al nuevo formato
     if(!picks1.length && !picks2.length && payload?.entry && Array.isArray(payload?.picks)){
       const entry = Number(payload.entry);
+      // Validar que entry sea 1 o 2
       if(entry === 1){
         picks1 = payload.picks;
       } else if(entry === 2){
         picks2 = payload.picks;
       }
+      // Si entry no es 1 ni 2, se ignora (picks1 y picks2 quedan vacíos)
     }
 
     if (!token) return { ok: false, error: "Falta token." };

@@ -94,7 +94,7 @@ El formulario de 'Guardar pronósticos' muestra el error 'entry1: no hay picks p
    - Verificar mensajes y comportamiento
 
 4. **Verificar en Sheets**:
-   - Revisar hoja "PRONOSTICOS" después de guardar
+   - Revisar hoja "PRONÓSTICOS" después de guardar
    - Confirmar que los picks se guardaron correctamente
    - Verificar que ENTRY column tiene valores 1 o 2
 
