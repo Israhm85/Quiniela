@@ -543,9 +543,9 @@ function doGet(e) {
   tpl.urlToken = (e?.parameter?.t || "").toString().trim();
   return tpl.evaluate()
     .setTitle("⚽ Quiniela Liga MX - Participa Ahora")
-    .setMetaTag("description", "Haz tus pronósticos de la Liga MX y compite por premios. Sistema de doble entrada con premio mayor y menor.")
-    .setMetaTag("keywords", "quiniela, liga mx, futbol, pronosticos, predicciones")
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+    .addMetaTag("description", "Haz tus pronósticos de la Liga MX y compite por premios. Sistema de doble entrada con premio mayor y menor.")
+    .addMetaTag("keywords", "quiniela, liga mx, futbol, pronosticos, predicciones")
     .addMetaTag("og:title", "⚽ Quiniela Liga MX - Participa Ahora")
     .addMetaTag("og:description", "Haz tus pronósticos de la Liga MX. 🏆 Premio Mayor para más aciertos. 🥈 Premio Menor por marcadores exactos. ¡2 pronósticos por jugador!")
     .addMetaTag("og:type", "website")
