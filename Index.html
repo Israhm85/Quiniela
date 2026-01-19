@@ -308,9 +308,10 @@
     <!-- INFO DE PREMIOS -->
     <div style="margin-top:12px;padding:12px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px">
       <div class="small" style="line-height:1.6">
-        <strong style="color:var(--ok)">🏆 Premio Mayor:</strong> Quien acierte más resultados (L/V/E). Si hay empate, se reparte.<br>
-        <strong style="color:var(--accent)">🥈 Premio Menor:</strong> Quien acierte más marcadores exactos. Sin empates (desempate: exactos → aciertos → primero en enviar).
+        <strong style="color:var(--ok)">🏆 Premio Mayor:</strong> <span id="premioMayorMonto" style="color:var(--ok)">$0</span> - Quien acierte más resultados (L/V/E). Si hay empate, se reparte.<br>
+        <strong style="color:var(--accent)">🥈 Premio Menor:</strong> <span id="premioMenorMonto" style="color:var(--accent)">$0</span> - Quien acierte más marcadores exactos. Sin empates (desempate: exactos → aciertos → primero en enviar).
       </div>
+      <div id="prizePoolInfo" class="small" style="margin-top:8px;opacity:.7"></div>
     </div>
 
     <div id="picksBox" style="margin-top:10px"></div>
@@ -415,6 +416,7 @@ function bootstrap(){
 
       renderForm();
       loadMyPicks();
+      loadPrizePool();
     })
     .withFailureHandler(err=>{
       console.error("api_bootstrap error:", err);
@@ -583,6 +585,26 @@ function submitAll(){
     }).api_submit({ token:SESSION.token, jornada:SESSION.jornada, entry:2, picks:picks2 });
 
   }).api_submit({ token:SESSION.token, jornada:SESSION.jornada, entry:1, picks:picks1 });
+}
+
+/* ---------- PRIZE POOL ---------- */
+function loadPrizePool(){
+  google.script.run.withSuccessHandler(r=>{
+    if(!r || !r.ok) return;
+    
+    const premioMayorEl = document.getElementById("premioMayorMonto");
+    const premioMenorEl = document.getElementById("premioMenorMonto");
+    const infoEl = document.getElementById("prizePoolInfo");
+    
+    if(premioMayorEl) premioMayorEl.innerHTML = `$${r.premioMayor.toLocaleString()}`;
+    if(premioMenorEl) premioMenorEl.innerHTML = `$${r.premioMenor.toLocaleString()}`;
+    
+    if(infoEl && r.jugadoresPagados > 0){
+      infoEl.innerHTML = `${r.jugadoresPagados} participante${r.jugadoresPagados > 1 ? 's' : ''} · Bolsa total: $${r.poolPremios.toLocaleString()}`;
+    } else if(infoEl) {
+      infoEl.innerHTML = `Esperando participantes...`;
+    }
+  }).api_getPrizePool();
 }
 
 /* ---------- TABLA / TRANSPARENCIA ---------- */
