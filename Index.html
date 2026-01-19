@@ -427,6 +427,15 @@ function bootstrap(){
       SESSION.partidos = r.partidos || [];
 
       console.log("Partidos loaded:", SESSION.partidos.length);
+      
+      // Validación: Verificar que SESSION.partidos se llenó correctamente
+      if(!SESSION.partidos || SESSION.partidos.length === 0){
+        console.error("⛔ ERROR: SESSION.partidos está vacío después del bootstrap");
+        document.getElementById("regMsg").innerHTML = `<span class="bad">⛔ Error: No se pudieron cargar los partidos. Contacta al administrador.</span>`;
+        return;
+      }
+      
+      console.log("✅ SESSION.partidos cargado correctamente con", SESSION.partidos.length, "partidos");
 
       // si no hay token, que se registre
       if(!SESSION.token){
@@ -569,6 +578,13 @@ function submitAll(){
   const saveMsg = document.getElementById("saveMsg");
   saveMsg.innerHTML = "Guardando…";
 
+  // Validación: Verificar que SESSION.partidos esté poblado
+  if(!SESSION.partidos || SESSION.partidos.length === 0){
+    saveMsg.innerHTML = `<span class="bad">⛔ Error: No hay partidos cargados. Intenta recargar la página.</span>`;
+    console.error("SESSION.partidos está vacío:", SESSION.partidos);
+    return;
+  }
+
   const picks1 = [];
   const picks2 = [];
 
@@ -596,27 +612,45 @@ function submitAll(){
     picks2.push({ local:p.local, visit:p.visit, pick, gl, gv });
   });
 
-  // guardar entry 1
-  google.script.run.withSuccessHandler(r1=>{
-    if(!r1 || !r1.ok){
-      saveMsg.innerHTML = `<span class="bad">⛔ Entry 1: ${esc(r1?.error || "error")}</span>`;
-      return;
-    }
+  // Validación frontend: Verificar que hay al menos un pick válido seleccionado
+  // Un pick es válido si tiene selección de resultado (L/E/V)
+  const validPicks1 = picks1.filter(p => p.pick && ["L","E","V"].includes(p.pick.toUpperCase()));
+  const validPicks2 = picks2.filter(p => p.pick && ["L","E","V"].includes(p.pick.toUpperCase()));
 
-    // guardar entry 2
-    google.script.run.withSuccessHandler(r2=>{
-      if(!r2 || !r2.ok){
-        saveMsg.innerHTML = `<span class="bad">⛔ Entry 2: ${esc(r2?.error || "error")}</span>`;
+  // Si no hay picks válidos en ninguno de los dos entries, mostrar error y NO llamar API
+  if(validPicks1.length === 0 && validPicks2.length === 0){
+    saveMsg.innerHTML = `<span class="bad">⛔ No hay picks para guardar. Selecciona al menos un resultado (Local/Empate/Visitante) en Entry 1 o Entry 2.</span>`;
+    console.warn("No se encontraron picks válidos. Entry 1:", validPicks1.length, "Entry 2:", validPicks2.length);
+    return;
+  }
+
+  // Enviar ambos entries en una sola llamada (backend espera picks1 y picks2 juntos)
+  google.script.run
+    .withSuccessHandler(r=>{
+      if(!r || !r.ok){
+        saveMsg.innerHTML = `<span class="bad">⛔ ${esc(r?.error || "Error al guardar")}</span>`;
         return;
       }
 
+      // Mostrar resultado exitoso con detalles por entry
+      const detail = r.detail || {};
+      const r1 = detail.entry1 || { created:0, updated:0, blocked:0 };
+      const r2 = detail.entry2 || { created:0, updated:0, blocked:0 };
+      
       saveMsg.innerHTML =
         `<span class="ok">✅ Guardado: Entry 1 (${r1.created+r1.updated}) · Entry 2 (${r2.created+r2.updated})</span>
          <div class="small">Bloqueados por lock: ${ (r1.blocked||0) + (r2.blocked||0) }</div>`;
-
-    }).api_submit({ token:SESSION.token, jornada:SESSION.jornada, entry:2, picks:picks2 });
-
-  }).api_submit({ token:SESSION.token, jornada:SESSION.jornada, entry:1, picks:picks1 });
+    })
+    .withFailureHandler(err=>{
+      saveMsg.innerHTML = `<span class="bad">⛔ Error de conexión: ${esc(err?.message || "intenta de nuevo")}</span>`;
+      console.error("Error al guardar picks:", err);
+    })
+    .api_submit({ 
+      token: SESSION.token, 
+      jornada: SESSION.jornada, 
+      picks1: picks1,  // Enviar picks1 para Entry 1
+      picks2: picks2   // Enviar picks2 para Entry 2
+    });
 }
 
 /* ---------- PRIZE POOL ---------- */

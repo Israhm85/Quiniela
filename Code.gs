@@ -704,11 +704,29 @@ function api_submit(payload) {
     const token = String(payload?.token || "").trim();
     const jornada = Number(payload?.jornada) || Number(getConfig_("JornadaActual")) || 1;
 
-    const picks1 = Array.isArray(payload?.picks1) ? payload.picks1 : [];
-    const picks2 = Array.isArray(payload?.picks2) ? payload.picks2 : [];
+    // Soportar ambos formatos: nuevo (picks1/picks2) y legacy (entry/picks)
+    let picks1 = Array.isArray(payload?.picks1) ? payload.picks1 : [];
+    let picks2 = Array.isArray(payload?.picks2) ? payload.picks2 : [];
+    
+    // Legacy support: si viene 'entry' y 'picks', convertir al nuevo formato
+    if(!picks1.length && !picks2.length && payload?.entry && Array.isArray(payload?.picks)){
+      const entry = Number(payload.entry);
+      if(entry === 1){
+        picks1 = payload.picks;
+      } else if(entry === 2){
+        picks2 = payload.picks;
+      }
+    }
 
     if (!token) return { ok: false, error: "Falta token." };
-    if (!picks1.length && !picks2.length) return { ok: false, error: "No hay picks para guardar." };
+    
+    // Validación mejorada: Verificar que hay al menos un pick con selección válida
+    const hasValidPicks1 = picks1.some(p => p?.pick && ["L","E","V"].includes(String(p.pick).trim().toUpperCase()));
+    const hasValidPicks2 = picks2.some(p => p?.pick && ["L","E","V"].includes(String(p.pick).trim().toUpperCase()));
+    
+    if (!hasValidPicks1 && !hasValidPicks2) {
+      return { ok: false, error: "No hay picks válidos para guardar. Selecciona al menos un resultado (Local/Empate/Visitante)." };
+    }
 
     // Bloqueo manual de jornada
     if (typeof isJornadaCerrada_ === "function" && isJornadaCerrada_()) {
