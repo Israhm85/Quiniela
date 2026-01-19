@@ -238,21 +238,21 @@
       -moz-appearance: none;
       appearance: none;
       border: 2px solid var(--line);
-      border-radius: 6px;
+      border-radius: 50%; /* Circular checkboxes */
       background: rgba(255,255,255,0.05);
       transition: all 0.2s ease;
       position: relative;
     }
     
     .checkbox-cell input[type="checkbox"]:hover {
-      border-color: var(--accent);
-      background: rgba(124,156,255,0.1);
+      border-color: #35d49a; /* Green hover */
+      background: rgba(53,212,154,0.1);
     }
     
     .checkbox-cell input[type="checkbox"]:checked {
-      background: linear-gradient(135deg, #6f8cff, #5a74ff);
-      border-color: #5a74ff;
-      box-shadow: 0 0 0 3px rgba(124,156,255,0.3);
+      background: linear-gradient(135deg, #35d49a, #2ab882); /* Green gradient */
+      border-color: #2ab882;
+      box-shadow: 0 0 0 3px rgba(53,212,154,0.3); /* Green glow */
     }
     
     .checkbox-cell input[type="checkbox"]:checked::after {
