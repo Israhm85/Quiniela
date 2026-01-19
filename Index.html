@@ -247,6 +247,8 @@ function loadPicksForEntry(entry){
     .withSuccessHandler(r=>{
       if(r && r.ok && r.picks){
         fillPicksInForm(r.picks, entry);
+      } else {
+        console.warn(`No picks data for entry ${entry}:`, r);
       }
     })
     .withFailureHandler(err=>{
@@ -265,7 +267,8 @@ function fillPicksInForm(picks, entry){
     const marcEl = document.getElementById(`marc_${idx}_${entry}`);
 
     if(pickEl && saved.pick) pickEl.value = saved.pick;
-    if(marcEl && saved.gl && saved.gv){
+    // Validate marcador values are present (can be numbers or numeric strings)
+    if(marcEl && saved.gl != null && saved.gv != null && String(saved.gl).trim() !== "" && String(saved.gv).trim() !== ""){
       marcEl.value = `${saved.gl}-${saved.gv}`;
     }
   });
