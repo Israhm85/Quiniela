@@ -989,36 +989,47 @@ function importarCalendarioESPN() {
     
     // Try multiple locations for week/jornada number
     if (ev.week && typeof ev.week.number !== "undefined" && ev.week.number !== null) {
-      jornada = Number(ev.week.number) || "";
+      const num = Number(ev.week.number);
+      if (!isNaN(num) && num >= 0) jornada = num;
     }
     
-    if (!jornada && comp.week && typeof comp.week.number !== "undefined" && comp.week.number !== null) {
-      jornada = Number(comp.week.number) || "";
+    if (jornada === "" && comp.week && typeof comp.week.number !== "undefined" && comp.week.number !== null) {
+      const num = Number(comp.week.number);
+      if (!isNaN(num) && num >= 0) jornada = num;
     }
     
     // Try competition season type (sometimes has week info)
-    if (!jornada && comp.season && comp.season.type && comp.season.type === 1) {
+    if (jornada === "" && comp.season && comp.season.type && comp.season.type === 1) {
       // Regular season - try to extract from competition notes or status
       if (comp.status && comp.status.type && comp.status.type.detail) {
-        const detailMatch = String(comp.status.type.detail).match(/Week\s+(\d+)/i);
-        if (detailMatch) jornada = Number(detailMatch[1]) || "";
+        const detailMatch = String(comp.status.type.detail).match(/(?:Week|Semana)\s+(\d+)/i);
+        if (detailMatch) {
+          const num = Number(detailMatch[1]);
+          if (!isNaN(num) && num >= 0) jornada = num;
+        }
       }
     }
     
     // Try week text as fallback
-    if (!jornada && ev.week && ev.week.text) {
+    if (jornada === "" && ev.week && ev.week.text) {
       const m = String(ev.week.text).match(/(\d+)/);
-      if (m) jornada = Number(m[1]) || "";
+      if (m) {
+        const num = Number(m[1]);
+        if (!isNaN(num) && num >= 0) jornada = num;
+      }
     }
     
     // Try competition notes
-    if (!jornada && comp.notes && Array.isArray(comp.notes)) {
+    if (jornada === "" && comp.notes && Array.isArray(comp.notes)) {
       for (const note of comp.notes) {
         if (note.headline && typeof note.headline === "string") {
-          const noteMatch = note.headline.match(/Week\s+(\d+)|Jornada\s+(\d+)/i);
+          const noteMatch = note.headline.match(/(?:Week|Semana|Jornada)\s+(\d+)/i);
           if (noteMatch) {
-            jornada = Number(noteMatch[1] || noteMatch[2]) || "";
-            break;
+            const num = Number(noteMatch[1]);
+            if (!isNaN(num) && num >= 0) {
+              jornada = num;
+              break;
+            }
           }
         }
       }
@@ -1028,7 +1039,7 @@ function importarCalendarioESPN() {
     if (existing.has(key)) continue;
 
     // Track if jornada is missing
-    if (!jornada) {
+    if (jornada === "") {
       sinJornada++;
       Logger.log(`⚠️ Partido sin jornada: ${local} vs ${visitante} - ${fecha}`);
       Logger.log(`   ev.week: ${JSON.stringify(ev.week)}`);
