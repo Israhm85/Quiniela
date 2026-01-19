@@ -1829,7 +1829,7 @@ function getEquiposLaLiga_() {
     { nombre: "Atlético Madrid", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/1068.png" },
     { nombre: "Sevilla", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/243.png" },
     { nombre: "Real Betis", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/244.png" },
-    { nombre: "Real Sociedad", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/243.png" },
+    { nombre: "Real Sociedad", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/90.png" },
     { nombre: "Villarreal", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/94.png" },
     { nombre: "Athletic Bilbao", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/81.png" },
     { nombre: "Valencia", logo: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/soccer/500/93.png" },

@@ -156,6 +156,16 @@
       opacity:.6;
       filter:grayscale(1);
     }
+    .decimo-badge{
+      background:#7c9cff;
+      color:#fff;
+      padding:4px 8px;
+      border-radius:6px;
+      font-size:12px;
+      font-weight:900;
+      display:inline-block;
+      margin-bottom:6px;
+    }
     
     /* ===== RESPONSIVE DESIGN ===== */
     
@@ -503,9 +513,7 @@ function renderForm(){
     // ✅ Destacar décimo partido
     const isDecimo = p.esDecimoPartido === true;
     const decimoBadge = isDecimo 
-      ? `<div style="background:#7c9cff;color:#fff;padding:4px 8px;border-radius:6px;font-size:12px;font-weight:900;display:inline-block;margin-bottom:6px">
-          🌍 PARTIDO EXTRA - ${esc(p.liga || "")}
-        </div>` 
+      ? `<div class="decimo-badge">🌍 PARTIDO EXTRA - ${esc(p.liga || "")}</div>` 
       : "";
 
     html += `
