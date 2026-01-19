@@ -138,6 +138,13 @@
       object-fit:contain;
     }
     .vs{opacity:.8; font-weight:800}
+    
+    /* Etiquetas Local/Visitante */
+    .team-label{
+      font-weight:400;
+      opacity:0.7;
+      font-size:13px;
+    }
 
     /* ✅ Dos picks lado a lado */
     .twoCols{
@@ -546,11 +553,11 @@ function renderForm(){
         <div class="matchHead">
           <div class="team">
             ${p.logoLocal ? `<img class="logo" src="${esc(p.logoLocal)}" alt="">` : ``}
-            <span><strong>${esc(p.local)}</strong></span>
+            <span><strong>${esc(p.local)}</strong> <span class="team-label">(Local)</span></span>
           </div>
           <div class="vs">vs</div>
           <div class="team" style="justify-content:flex-end">
-            <span><strong>${esc(p.visit)}</strong></span>
+            <span><strong>${esc(p.visit)}</strong> <span class="team-label">(Visitante)</span></span>
             ${p.logoVisit ? `<img class="logo" src="${esc(p.logoVisit)}" alt="">` : ``}
           </div>
         </div>
