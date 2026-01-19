@@ -961,6 +961,7 @@ function importarCalendarioESPN() {
 
   const existing = existingPartidosKeySet_();
   const rows = [];
+  let sinJornada = 0; // Track matches without jornada
 
   for (const ev of events) {
     const comp = (ev.competitions && ev.competitions[0]) ? ev.competitions[0] : null;
@@ -985,15 +986,54 @@ function importarCalendarioESPN() {
     if (visitLogo) upsertEquipoLogo_(visitante, visitLogo);
 
     let jornada = "";
-    if (ev.week && typeof ev.week.number !== "undefined") jornada = Number(ev.week.number) || "";
-    if (!jornada && comp.week && typeof comp.week.number !== "undefined") jornada = Number(comp.week.number) || "";
+    
+    // Try multiple locations for week/jornada number
+    if (ev.week && typeof ev.week.number !== "undefined" && ev.week.number !== null) {
+      jornada = Number(ev.week.number) || "";
+    }
+    
+    if (!jornada && comp.week && typeof comp.week.number !== "undefined" && comp.week.number !== null) {
+      jornada = Number(comp.week.number) || "";
+    }
+    
+    // Try competition season type (sometimes has week info)
+    if (!jornada && comp.season && comp.season.type && comp.season.type === 1) {
+      // Regular season - try to extract from competition notes or status
+      if (comp.status && comp.status.type && comp.status.type.detail) {
+        const detailMatch = String(comp.status.type.detail).match(/Week\s+(\d+)/i);
+        if (detailMatch) jornada = Number(detailMatch[1]) || "";
+      }
+    }
+    
+    // Try week text as fallback
     if (!jornada && ev.week && ev.week.text) {
       const m = String(ev.week.text).match(/(\d+)/);
       if (m) jornada = Number(m[1]) || "";
     }
+    
+    // Try competition notes
+    if (!jornada && comp.notes && Array.isArray(comp.notes)) {
+      for (const note of comp.notes) {
+        if (note.headline && typeof note.headline === "string") {
+          const noteMatch = note.headline.match(/Week\s+(\d+)|Jornada\s+(\d+)/i);
+          if (noteMatch) {
+            jornada = Number(noteMatch[1] || noteMatch[2]) || "";
+            break;
+          }
+        }
+      }
+    }
 
     const key = makePartidoKey_(fecha, local, visitante);
     if (existing.has(key)) continue;
+
+    // Track if jornada is missing
+    if (!jornada) {
+      sinJornada++;
+      Logger.log(`⚠️ Partido sin jornada: ${local} vs ${visitante} - ${fecha}`);
+      Logger.log(`   ev.week: ${JSON.stringify(ev.week)}`);
+      Logger.log(`   comp.week: ${JSON.stringify(comp.week)}`);
+    }
 
     rows.push([jornada, fecha, local, visitante, "", ""]);
     existing.add(key);
@@ -1007,7 +1047,11 @@ function importarCalendarioESPN() {
   shPar.getRange(shPar.getLastRow() + 1, 1, rows.length, 6).setValues(rows);
   shPar.getRange(2, 2, shPar.getLastRow() - 1, 1).setNumberFormat("mm/dd/yyyy hh:mm AM/PM");
 
-  SpreadsheetApp.getUi().alert(`✅ Importé ${rows.length} partidos desde ESPN y guardé logos en EQUIPOS.`);
+  let mensaje = `✅ Importé ${rows.length} partidos desde ESPN y guardé logos en EQUIPOS.`;
+  if (sinJornada > 0) {
+    mensaje += `\n\n⚠️ ${sinJornada} partido(s) sin número de jornada. Revisa el log (Ver → Registros) para más detalles.`;
+  }
+  SpreadsheetApp.getUi().alert(mensaje);
 }
 function existingPartidosKeySet_() {
   const ss = SpreadsheetApp.getActive();
