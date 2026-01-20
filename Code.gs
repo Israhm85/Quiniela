@@ -686,9 +686,14 @@ function api_getMyPicks(token, jornada, entry) {
 
     let gl="", gv="";
     const pm = String(r[7]||"").trim();
-    if (pm && pm.includes("-")) {
+    // Validar que el marcador tenga formato correcto (no timestamps u otros textos)
+    if (pm && pm.includes("-") && pm.length < 10) {  // Máximo "99-99" son 5 caracteres, dejamos margen
       const parts = pm.split("-");
-      gl = parts[0]; gv = parts[1];
+      // Solo aceptar si ambas partes son numéricas y cortas
+      if(parts.length === 2 && parts[0].length <= 2 && parts[1].length <= 2 &&
+         !isNaN(Number(parts[0])) && !isNaN(Number(parts[1]))){
+        gl = parts[0]; gv = parts[1];
+      }
     }
 
     map[key] = { pick: String(r[6]||""), gl, gv };
@@ -704,11 +709,31 @@ function api_submit(payload) {
     const token = String(payload?.token || "").trim();
     const jornada = Number(payload?.jornada) || Number(getConfig_("JornadaActual")) || 1;
 
-    const picks1 = Array.isArray(payload?.picks1) ? payload.picks1 : [];
-    const picks2 = Array.isArray(payload?.picks2) ? payload.picks2 : [];
+    // Soportar ambos formatos: nuevo (picks1/picks2) y legacy (entry/picks)
+    let picks1 = Array.isArray(payload?.picks1) ? payload.picks1 : [];
+    let picks2 = Array.isArray(payload?.picks2) ? payload.picks2 : [];
+    
+    // Legacy support: si viene 'entry' y 'picks', convertir al nuevo formato
+    if(!picks1.length && !picks2.length && payload?.entry && Array.isArray(payload?.picks)){
+      const entry = Number(payload.entry);
+      // Validar que entry sea 1 o 2
+      if(entry === 1){
+        picks1 = payload.picks;
+      } else if(entry === 2){
+        picks2 = payload.picks;
+      }
+      // Si entry no es 1 ni 2, se ignora (picks1 y picks2 quedan vacíos)
+    }
 
     if (!token) return { ok: false, error: "Falta token." };
-    if (!picks1.length && !picks2.length) return { ok: false, error: "No hay picks para guardar." };
+    
+    // Validación mejorada: Verificar que hay al menos un pick con selección válida
+    const hasValidPicks1 = picks1.some(p => p?.pick && ["L","E","V"].includes(String(p.pick).trim().toUpperCase()));
+    const hasValidPicks2 = picks2.some(p => p?.pick && ["L","E","V"].includes(String(p.pick).trim().toUpperCase()));
+    
+    if (!hasValidPicks1 && !hasValidPicks2) {
+      return { ok: false, error: "No hay picks válidos para guardar. Selecciona al menos un resultado (Local/Empate/Visitante)." };
+    }
 
     // Bloqueo manual de jornada
     if (typeof isJornadaCerrada_ === "function" && isJornadaCerrada_()) {
