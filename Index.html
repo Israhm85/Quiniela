@@ -1096,7 +1096,7 @@ function loadTransparencia(){
     if (!r.rows || r.rows.length === 0) {
       html += `<div class="small" style="margin-top:10px;opacity:.7">No hay picks registrados para esta jornada aún.</div>`;
     } else {
-      (r.rows||[]).forEach(u=>{
+      r.rows.forEach(u=>{
         html += `
           <div class="card" style="background:rgba(255,255,255,.03)">
             <div style="font-weight:900;margin-bottom:8px">
