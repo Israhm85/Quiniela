@@ -1102,38 +1102,84 @@ function loadTransparencia(){
       html += `<div class="small" style="margin-top:10px;opacity:.7">No hay picks registrados para esta jornada aún.</div>`;
     } else {
       console.log("📊 Displaying", r.rows.length, "player entries");
-      r.rows.forEach(u=>{
-        html += `
-          <div class="card" style="background:rgba(255,255,255,.03)">
-            <div style="font-weight:900;margin-bottom:8px">
-              ${esc(u.nombre)} — Entry ${esc(u.entry)}
-            </div>
-
-            <div style="overflow:auto">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Partido</th>
-                    <th class="center">Pick</th>
-                    <th class="center">Marcador</th>
-                    <th class="center">Real</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${(u.picks||[]).map(p=>`
-                    <tr>
-                      <td>${esc(p.local)} vs ${esc(p.visit)}</td>
-                      <td class="center"><strong>${esc(p.pick || "—")}</strong></td>
-                      <td class="center">${esc(p.pickMarc || "—")}</td>
-                      <td class="center">${esc(p.marcadorReal || "—")}</td>
-                    </tr>
-                  `).join("")}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        `;
+      
+      // Obtener lista única de partidos de todos los picks
+      const partidosSet = new Map();
+      r.rows.forEach(u => {
+        (u.picks || []).forEach(p => {
+          const key = `${p.local}|${p.visit}`;
+          if (!partidosSet.has(key)) {
+            partidosSet.set(key, { local: p.local, visit: p.visit, marcadorReal: p.marcadorReal });
+          }
+        });
       });
+      const partidos = Array.from(partidosSet.values());
+      
+      if (partidos.length === 0) {
+        html += `<div class="small" style="margin-top:10px;opacity:.7">No hay partidos registrados.</div>`;
+      } else {
+        // Crear tabla matriz
+        html += `<div style="overflow-x:auto;margin-top:10px">
+          <table style="min-width:100%;border-collapse:collapse">
+            <thead>
+              <tr style="border-bottom:2px solid var(--line)">
+                <th style="position:sticky;left:0;background:var(--bg);padding:8px;text-align:left;border-right:2px solid var(--line);min-width:120px">Participante</th>`;
+        
+        // Encabezados de partidos (logos)
+        partidos.forEach(p => {
+          html += `<th style="padding:8px;text-align:center;min-width:80px">
+            <div style="font-size:0.7em;white-space:nowrap">${esc(p.local)}</div>
+            <div style="font-size:0.6em;opacity:0.6">vs</div>
+            <div style="font-size:0.7em;white-space:nowrap">${esc(p.visit)}</div>
+          </th>`;
+        });
+        
+        html += `</tr></thead><tbody>`;
+        
+        // Filas de participantes
+        r.rows.forEach((u, idx) => {
+          const bgColor = idx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent';
+          html += `<tr style="background:${bgColor};border-bottom:1px solid rgba(255,255,255,0.05)">
+            <td style="position:sticky;left:0;background:${bgColor};padding:8px;border-right:2px solid var(--line);font-weight:600">
+              ${esc(u.nombre)}<span style="opacity:0.6;font-weight:400;font-size:0.85em"> (${esc(u.entry)})</span>
+            </td>`;
+          
+          // Crear mapa de picks del usuario
+          const picksMap = new Map();
+          (u.picks || []).forEach(p => {
+            const key = `${p.local}|${p.visit}`;
+            picksMap.set(key, p);
+          });
+          
+          // Celdas de picks
+          partidos.forEach(partido => {
+            const key = `${partido.local}|${partido.visit}`;
+            const pick = picksMap.get(key);
+            
+            if (pick && pick.pick) {
+              // Determinar color según acierto
+              let cellStyle = 'padding:8px;text-align:center;font-weight:700;font-size:1.1em';
+              if (partido.marcadorReal && pick.pick) {
+                // Hay marcador real, verificar si acertó
+                const realResult = pick.resReal || '';
+                if (realResult && pick.pick === realResult) {
+                  cellStyle += ';color:var(--ok)';  // Verde si acertó
+                } else if (realResult) {
+                  cellStyle += ';color:var(--bad)';  // Rojo si falló
+                }
+              }
+              
+              html += `<td style="${cellStyle}">${esc(pick.pick)}</td>`;
+            } else {
+              html += `<td style="padding:8px;text-align:center;opacity:0.3">—</td>`;
+            }
+          });
+          
+          html += `</tr>`;
+        });
+        
+        html += `</tbody></table></div>`;
+      }
     }
 
     box.innerHTML = html;
