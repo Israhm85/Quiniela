@@ -1086,46 +1086,54 @@ function loadTransparencia(){
 
   google.script.run.withSuccessHandler(r=>{
     if(!r || !r.ok){
-      box.innerHTML = `<div class="small bad">⛔ ${esc(r?.error || "No disponible (cierra la jornada)")}</div>`;
+      const errorMsg = r?.error || "No disponible";
+      box.innerHTML = `<div class="small bad">⛔ ${esc(errorMsg)}</div>`;
       return;
     }
 
     let html = `<div class="small" style="margin-bottom:10px">Transparencia — Jornada ${esc(r.jornada)}</div>`;
 
-    (r.rows||[]).forEach(u=>{
-      html += `
-        <div class="card" style="background:rgba(255,255,255,.03)">
-          <div style="font-weight:900;margin-bottom:8px">
-            ${esc(u.nombre)} — Entry ${esc(u.entry)}
-          </div>
+    if (!r.rows || r.rows.length === 0) {
+      html += `<div class="small" style="margin-top:10px;opacity:.7">No hay picks registrados para esta jornada aún.</div>`;
+    } else {
+      (r.rows||[]).forEach(u=>{
+        html += `
+          <div class="card" style="background:rgba(255,255,255,.03)">
+            <div style="font-weight:900;margin-bottom:8px">
+              ${esc(u.nombre)} — Entry ${esc(u.entry)}
+            </div>
 
-          <div style="overflow:auto">
-            <table>
-              <thead>
-                <tr>
-                  <th>Partido</th>
-                  <th class="center">Pick</th>
-                  <th class="center">Marcador</th>
-                  <th class="center">Real</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${(u.picks||[]).map(p=>`
+            <div style="overflow:auto">
+              <table>
+                <thead>
                   <tr>
-                    <td>${esc(p.local)} vs ${esc(p.visit)}</td>
-                    <td class="center"><strong>${esc(p.pick || "—")}</strong></td>
-                    <td class="center">${esc(p.pickMarc || "—")}</td>
-                    <td class="center">${esc(p.marcadorReal || "—")}</td>
+                    <th>Partido</th>
+                    <th class="center">Pick</th>
+                    <th class="center">Marcador</th>
+                    <th class="center">Real</th>
                   </tr>
-                `).join("")}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  ${(u.picks||[]).map(p=>`
+                    <tr>
+                      <td>${esc(p.local)} vs ${esc(p.visit)}</td>
+                      <td class="center"><strong>${esc(p.pick || "—")}</strong></td>
+                      <td class="center">${esc(p.pickMarc || "—")}</td>
+                      <td class="center">${esc(p.marcadorReal || "—")}</td>
+                    </tr>
+                  `).join("")}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      `;
-    });
+        `;
+      });
+    }
 
     box.innerHTML = html;
+  }).withFailureHandler(err => {
+    console.error("Error loading transparencia:", err);
+    box.innerHTML = `<div class="small bad">⛔ Error al cargar transparencia: ${esc(err?.message || "intenta de nuevo")}</div>`;
   }).api_getTransparenciaPicks(SESSION.jornada);
 }
 
