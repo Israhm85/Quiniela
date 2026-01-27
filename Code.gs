@@ -138,8 +138,29 @@ function registrarJugador_(nombre) {
   const lr = sh.getLastRow();
   if (lr >= 2) {
     const rows = sh.getRange(2,1,lr-1,6).getValues();
-    for (const r of rows) {
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
       if (normalizeName_(r[1]) === norm) {
+        const activo = String(r[3] || "").toUpperCase();
+        const existingToken = String(r[2] || "").trim();
+        
+        // Si el jugador ya existe y está activo, devolver el token existente
+        if (activo === "SI" && existingToken) {
+          const id = Number(r[0]);
+          return { ok: true, id, token: existingToken };
+        }
+        
+        // Si el jugador existe pero está inactivo, reactivarlo con nuevo token
+        if (activo !== "SI") {
+          const rowNum = i + 2; // +2 porque i es 0-based y empezamos en fila 2
+          const id = Number(r[0]);
+          const newToken = Utilities.getUuid();
+          sh.getRange(rowNum, 3).setValue(newToken); // Columna TOKEN
+          sh.getRange(rowNum, 4).setValue("SI"); // Columna ACTIVO
+          return { ok: true, id, token: newToken };
+        }
+        
+        // Jugador existe y está activo pero sin token (caso raro)
         return { ok:false, error:"⛔ Ese nombre ya existe (no se permiten repetidos)." };
       }
     }
