@@ -157,6 +157,7 @@ function registrarJugador_(nombre) {
           const newToken = Utilities.getUuid();
           sh.getRange(rowNum, 3).setValue(newToken); // Columna TOKEN
           sh.getRange(rowNum, 4).setValue("SI"); // Columna ACTIVO
+          sh.getRange(rowNum, 6).setValue(new Date()); // Columna FECHA_REG - actualizar al reactivar
           return { ok: true, id, token: newToken };
         }
         
