@@ -684,7 +684,7 @@ function loadPicksForEntry(entry){
 }
 
 function fillPicksInForm(picks, entry){
-  const partidos = SESSION.partidos.slice(0, 10);
+  const partidos = SESSION.partidos;
   
   partidos.forEach((p, idx) => {
     const key = generateMatchKey(SESSION.jornada, p.local, p.visit);
@@ -716,8 +716,8 @@ function renderForm(){
 
   console.log("✅ Rendering form with", SESSION.partidos.length, "partidos");
   
-  // Tomar solo primeros 10 partidos (máximo)
-  const partidos = SESSION.partidos.slice(0, 10);
+  // Tomar todos los partidos (incluye décimo partido si existe)
+  const partidos = SESSION.partidos;
 
   let html = `
     <div class="table-wrapper">
@@ -892,7 +892,7 @@ function submitAll(){
     return;
   }
 
-  const partidos = SESSION.partidos.slice(0, 10);
+  const partidos = SESSION.partidos;
   const picks1 = [];
   const picks2 = [];
 
