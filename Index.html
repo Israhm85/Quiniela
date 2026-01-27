@@ -1122,8 +1122,8 @@ function loadTransparencia(){
         html += `<div style="overflow-x:auto;margin-top:10px">
           <table style="min-width:100%;border-collapse:separate;border-spacing:0">
             <thead>
-              <tr style="position:sticky;top:0;background:var(--bg);z-index:10;border-bottom:2px solid var(--line);box-shadow:0 2px 4px rgba(0,0,0,0.2)">
-                <th style="position:sticky;left:0;background:var(--bg);z-index:11;padding:8px;text-align:left;border-right:2px solid var(--line);min-width:120px">Participante</th>`;
+              <tr style="position:sticky;top:0;background:var(--bg);z-index:20;border-bottom:2px solid var(--line);box-shadow:0 2px 4px rgba(0,0,0,0.2)">
+                <th style="position:sticky;left:0;background:var(--bg);z-index:21;padding:8px;text-align:left;border-right:2px solid var(--line);min-width:120px;box-shadow:2px 0 4px rgba(0,0,0,0.15)">Participante</th>`;
         
         // Encabezados de partidos (logos)
         partidos.forEach(p => {
@@ -1140,7 +1140,7 @@ function loadTransparencia(){
         r.rows.forEach((u, idx) => {
           const bgColor = idx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent';
           html += `<tr style="background:${bgColor};border-bottom:1px solid rgba(255,255,255,0.05)">
-            <td style="position:sticky;left:0;background:${bgColor};padding:8px;border-right:2px solid var(--line);font-weight:600;z-index:2;box-shadow:2px 0 4px rgba(0,0,0,0.1)">
+            <td style="position:sticky;left:0;background:var(--bg);padding:8px;border-right:2px solid var(--line);font-weight:600;z-index:5;box-shadow:2px 0 4px rgba(0,0,0,0.15)">
               ${esc(u.nombre)}<span style="opacity:0.6;font-weight:400;font-size:0.85em"> (${esc(u.entry)})</span>
             </td>`;
           
