@@ -2108,7 +2108,13 @@ function api_getPremioMarcadorExactoPorEntry(jornadaOpt) {
 function api_getTransparenciaPicks(jornadaOpt) {
   const jornada = Number(jornadaOpt) || Number(getConfig_("JornadaActual")) || 1;
 
-  if (!isJornadaCerrada_()) {
+  Logger.log("api_getTransparenciaPicks called for jornada: " + jornada);
+  
+  const cerrada = isJornadaCerrada_();
+  Logger.log("isJornadaCerrada: " + cerrada);
+  
+  if (!cerrada) {
+    Logger.log("Returning error: jornada not closed");
     return { ok: false, error: "La jornada aún no está cerrada." };
   }
 
@@ -2127,6 +2133,8 @@ function api_getTransparenciaPicks(jornadaOpt) {
     }))
     .filter(p => p.local && p.visit);
 
+  Logger.log("Found " + partidos.length + " partidos for jornada " + jornada);
+
   const partKeyList = partidos.map(p => makeKeyRes_(jornada, p.local, p.visit));
   const partIndex = {};
   for (let i = 0; i < partidos.length; i++) partIndex[partKeyList[i]] = partidos[i];
@@ -2134,7 +2142,10 @@ function api_getTransparenciaPicks(jornadaOpt) {
   // Pronósticos
   const shPro = ss.getSheetByName(SHEETS.PRONOSTICOS);
   const lr = shPro.getLastRow();
-  if (lr < 2) return { ok: true, jornada, partidos, rows: [] };
+  if (lr < 2) {
+    Logger.log("No pronosticos found, returning empty");
+    return { ok: true, jornada, partidos, rows: [] };
+  }
 
   const data = shPro.getRange(2, 1, lr - 1, 10).getValues();
 
@@ -2181,6 +2192,7 @@ function api_getTransparenciaPicks(jornadaOpt) {
     return (a.entry - b.entry);
   });
 
+  Logger.log("Returning " + rows.length + " player entries with picks");
   return { ok: true, jornada, partidos, rows };
 }
 

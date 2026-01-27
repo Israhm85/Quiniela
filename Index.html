@@ -1083,10 +1083,14 @@ function loadTabla(){
 function loadTransparencia(){
   const box = document.getElementById("tablaBox");
   box.innerHTML = `<div class="small">Cargando transparencia…</div>`;
+  
+  console.log("🔍 Loading transparencia for jornada:", SESSION.jornada);
 
   google.script.run.withSuccessHandler(r=>{
+    console.log("✅ Transparencia response:", r);
     if(!r || !r.ok){
-      const errorMsg = r?.error || "No disponible";
+      const errorMsg = r?.error || "No disponible. Por favor verifica que la jornada esté cerrada correctamente.";
+      console.error("❌ Transparencia error:", errorMsg, "Full response:", r);
       box.innerHTML = `<div class="small bad">⛔ ${esc(errorMsg)}</div>`;
       return;
     }
@@ -1094,8 +1098,10 @@ function loadTransparencia(){
     let html = `<div class="small" style="margin-bottom:10px">Transparencia — Jornada ${esc(r.jornada)}</div>`;
 
     if (!r.rows || r.rows.length === 0) {
+      console.warn("⚠️ No rows returned");
       html += `<div class="small" style="margin-top:10px;opacity:.7">No hay picks registrados para esta jornada aún.</div>`;
     } else {
+      console.log("📊 Displaying", r.rows.length, "player entries");
       r.rows.forEach(u=>{
         html += `
           <div class="card" style="background:rgba(255,255,255,.03)">
@@ -1132,7 +1138,7 @@ function loadTransparencia(){
 
     box.innerHTML = html;
   }).withFailureHandler(err => {
-    console.error("Error loading transparencia:", err);
+    console.error("❌ Error loading transparencia:", err);
     box.innerHTML = `<div class="small bad">⛔ Error al cargar transparencia: ${esc(err?.message || "intenta de nuevo")}</div>`;
   }).api_getTransparenciaPicks(SESSION.jornada);
 }
