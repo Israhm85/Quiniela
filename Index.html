@@ -1107,9 +1107,9 @@ function loadTransparencia(){
       const partidosSet = new Map();
       r.rows.forEach(u => {
         (u.picks || []).forEach(p => {
-          const key = `${p.local}|${p.visit}`;
+          const key = `${p.local}|||${p.visit}`;  // Usar ||| como separador más seguro
           if (!partidosSet.has(key)) {
-            partidosSet.set(key, { local: p.local, visit: p.visit, marcadorReal: p.marcadorReal });
+            partidosSet.set(key, { local: p.local, visit: p.visit, marcadorReal: p.marcadorReal, resReal: p.resReal });
           }
         });
       });
@@ -1147,24 +1147,24 @@ function loadTransparencia(){
           // Crear mapa de picks del usuario
           const picksMap = new Map();
           (u.picks || []).forEach(p => {
-            const key = `${p.local}|${p.visit}`;
+            const key = `${p.local}|||${p.visit}`;  // Usar mismo separador
             picksMap.set(key, p);
           });
           
           // Celdas de picks
           partidos.forEach(partido => {
-            const key = `${partido.local}|${partido.visit}`;
+            const key = `${partido.local}|||${partido.visit}`;
             const pick = picksMap.get(key);
             
             if (pick && pick.pick) {
               // Determinar color según acierto
               let cellStyle = 'padding:8px;text-align:center;font-weight:700;font-size:1.1em';
-              if (partido.marcadorReal && pick.pick) {
-                // Hay marcador real, verificar si acertó
-                const realResult = pick.resReal || '';
-                if (realResult && pick.pick === realResult) {
+              // Usar resReal del pick que contiene el resultado real del partido
+              if (pick.resReal && pick.pick) {
+                // Comparar pick con resultado real
+                if (pick.pick === pick.resReal) {
                   cellStyle += ';color:var(--ok)';  // Verde si acertó
-                } else if (realResult) {
+                } else {
                   cellStyle += ';color:var(--bad)';  // Rojo si falló
                 }
               }
