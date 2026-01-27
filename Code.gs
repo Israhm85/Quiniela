@@ -761,6 +761,17 @@ function api_submit(payload) {
       }))
       .filter(p => p.local && p.visit);
 
+    // ✅ Agregar décimo partido si existe
+    const decimoPartido = getDecimoPartidoPorJornada_(jornada);
+    if (decimoPartido && decimoPartido.local && decimoPartido.visitante) {
+      parData.push({
+        fecha: decimoPartido.fecha,
+        local: decimoPartido.local,
+        visit: decimoPartido.visitante,
+        marcador: "" // Décimo partido no tiene marcador en tiempo real
+      });
+    }
+
     if (!parData.length) return { ok: false, error: `No hay partidos para jornada ${jornada}.` };
 
     const partidoIndex = {};
