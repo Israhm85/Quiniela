@@ -2108,10 +2108,10 @@ function api_getPremioMarcadorExactoPorEntry(jornadaOpt) {
 function api_getTransparenciaPicks(jornadaOpt) {
   const jornada = Number(jornadaOpt) || Number(getConfig_("JornadaActual")) || 1;
 
-  Logger.log("api_getTransparenciaPicks called for jornada: " + jornada);
+  Logger.log(`api_getTransparenciaPicks called for jornada: ${jornada}`);
   
   const cerrada = isJornadaCerrada_();
-  Logger.log("isJornadaCerrada: " + cerrada);
+  Logger.log(`isJornadaCerrada: ${cerrada}`);
   
   if (!cerrada) {
     Logger.log("Returning error: jornada not closed");
@@ -2133,7 +2133,7 @@ function api_getTransparenciaPicks(jornadaOpt) {
     }))
     .filter(p => p.local && p.visit);
 
-  Logger.log("Found " + partidos.length + " partidos for jornada " + jornada);
+  Logger.log(`Found ${partidos.length} partidos for jornada ${jornada}`);
 
   const partKeyList = partidos.map(p => makeKeyRes_(jornada, p.local, p.visit));
   const partIndex = {};
@@ -2192,7 +2192,7 @@ function api_getTransparenciaPicks(jornadaOpt) {
     return (a.entry - b.entry);
   });
 
-  Logger.log("Returning " + rows.length + " player entries with picks");
+  Logger.log(`Returning ${rows.length} player entries with picks`);
   return { ok: true, jornada, partidos, rows };
 }
 
