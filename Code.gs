@@ -2193,7 +2193,17 @@ function api_getTransparenciaPicks(jornadaOpt) {
   });
 
   Logger.log(`Returning ${rows.length} player entries with picks`);
-  return { ok: true, jornada, partidos, rows };
+  
+  // Convertir firstTs a timestamp para serialización
+  const rowsWithTimestamps = rows.map(r => ({
+    id: r.id,
+    entry: r.entry,
+    nombre: r.nombre,
+    firstTs: r.firstTs ? r.firstTs.getTime() : null,
+    picks: r.picks
+  }));
+  
+  return { ok: true, jornada, partidos, rows: rowsWithTimestamps };
 }
 
 function getLigaMxLogoUrl_(teamName) {
