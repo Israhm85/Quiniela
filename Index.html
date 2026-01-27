@@ -1122,12 +1122,12 @@ function loadTransparencia(){
         html += `<div style="overflow-x:auto;margin-top:10px">
           <table style="min-width:100%;border-collapse:collapse">
             <thead>
-              <tr style="border-bottom:2px solid var(--line)">
-                <th style="position:sticky;left:0;background:var(--bg);padding:8px;text-align:left;border-right:2px solid var(--line);min-width:120px">Participante</th>`;
+              <tr style="position:sticky;top:0;background:var(--bg);z-index:10;border-bottom:2px solid var(--line);box-shadow:0 2px 4px rgba(0,0,0,0.2)">
+                <th style="position:sticky;left:0;background:var(--bg);z-index:11;padding:8px;text-align:left;border-right:2px solid var(--line);min-width:120px">Participante</th>`;
         
         // Encabezados de partidos (logos)
         partidos.forEach(p => {
-          html += `<th style="padding:8px;text-align:center;min-width:80px">
+          html += `<th style="background:var(--bg);padding:8px;text-align:center;min-width:80px">
             <div style="font-size:0.7em;white-space:nowrap">${esc(p.local)}</div>
             <div style="font-size:0.6em;opacity:0.6">vs</div>
             <div style="font-size:0.7em;white-space:nowrap">${esc(p.visit)}</div>
@@ -1140,7 +1140,7 @@ function loadTransparencia(){
         r.rows.forEach((u, idx) => {
           const bgColor = idx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent';
           html += `<tr style="background:${bgColor};border-bottom:1px solid rgba(255,255,255,0.05)">
-            <td style="position:sticky;left:0;background:${bgColor};padding:8px;border-right:2px solid var(--line);font-weight:600">
+            <td style="position:sticky;left:0;background:${bgColor};padding:8px;border-right:2px solid var(--line);font-weight:600;z-index:1">
               ${esc(u.nombre)}<span style="opacity:0.6;font-weight:400;font-size:0.85em"> (${esc(u.entry)})</span>
             </td>`;
           
@@ -1157,19 +1157,24 @@ function loadTransparencia(){
             const pick = picksMap.get(key);
             
             if (pick && pick.pick) {
-              // Determinar color según acierto
+              // Determinar color y estilo según acierto
               let cellStyle = 'padding:8px;text-align:center;font-weight:700;font-size:1.1em';
+              let pickDisplay = esc(pick.pick);
+              
               // Usar resReal del pick que contiene el resultado real del partido
               if (pick.resReal && pick.pick) {
                 // Comparar pick con resultado real
                 if (pick.pick === pick.resReal) {
-                  cellStyle += ';color:var(--ok)';  // Verde si acertó
+                  // Acierto: fondo verde, texto más destacado con checkmark
+                  cellStyle += ';color:#fff;background:var(--ok);border-radius:4px';
+                  pickDisplay = `✓ ${pickDisplay}`;
                 } else {
-                  cellStyle += ';color:var(--bad)';  // Rojo si falló
+                  // Error: texto rojo
+                  cellStyle += ';color:var(--bad)';
                 }
               }
               
-              html += `<td style="${cellStyle}">${esc(pick.pick)}</td>`;
+              html += `<td style="${cellStyle}">${pickDisplay}</td>`;
             } else {
               html += `<td style="padding:8px;text-align:center;opacity:0.3">—</td>`;
             }
