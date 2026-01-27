@@ -138,8 +138,30 @@ function registrarJugador_(nombre) {
   const lr = sh.getLastRow();
   if (lr >= 2) {
     const rows = sh.getRange(2,1,lr-1,6).getValues();
-    for (const r of rows) {
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
       if (normalizeName_(r[1]) === norm) {
+        const activo = String(r[3] || "").toUpperCase();
+        const existingToken = String(r[2] || "").trim();
+        
+        // Si el jugador ya existe y está activo, devolver el token existente
+        if (activo === "SI" && existingToken) {
+          const id = Number(r[0]);
+          return { ok: true, id, token: existingToken };
+        }
+        
+        // Si el jugador existe pero está inactivo, reactivarlo con nuevo token
+        if (activo !== "SI") {
+          const rowNum = i + 2; // +2 porque i es 0-based y empezamos en fila 2
+          const id = Number(r[0]);
+          const newToken = Utilities.getUuid();
+          sh.getRange(rowNum, 3).setValue(newToken); // Columna TOKEN
+          sh.getRange(rowNum, 4).setValue("SI"); // Columna ACTIVO
+          sh.getRange(rowNum, 6).setValue(new Date()); // Columna FECHA_REG - actualizar al reactivar
+          return { ok: true, id, token: newToken };
+        }
+        
+        // Jugador existe y está activo pero sin token (caso raro)
         return { ok:false, error:"⛔ Ese nombre ya existe (no se permiten repetidos)." };
       }
     }
@@ -2086,7 +2108,13 @@ function api_getPremioMarcadorExactoPorEntry(jornadaOpt) {
 function api_getTransparenciaPicks(jornadaOpt) {
   const jornada = Number(jornadaOpt) || Number(getConfig_("JornadaActual")) || 1;
 
-  if (!isJornadaCerrada_()) {
+  Logger.log(`api_getTransparenciaPicks called for jornada: ${jornada}`);
+  
+  const cerrada = isJornadaCerrada_();
+  Logger.log(`isJornadaCerrada: ${cerrada}`);
+  
+  if (!cerrada) {
+    Logger.log("Returning error: jornada not closed");
     return { ok: false, error: "La jornada aún no está cerrada." };
   }
 
@@ -2105,6 +2133,8 @@ function api_getTransparenciaPicks(jornadaOpt) {
     }))
     .filter(p => p.local && p.visit);
 
+  Logger.log(`Found ${partidos.length} partidos for jornada ${jornada}`);
+
   const partKeyList = partidos.map(p => makeKeyRes_(jornada, p.local, p.visit));
   const partIndex = {};
   for (let i = 0; i < partidos.length; i++) partIndex[partKeyList[i]] = partidos[i];
@@ -2112,7 +2142,10 @@ function api_getTransparenciaPicks(jornadaOpt) {
   // Pronósticos
   const shPro = ss.getSheetByName(SHEETS.PRONOSTICOS);
   const lr = shPro.getLastRow();
-  if (lr < 2) return { ok: true, jornada, partidos, rows: [] };
+  if (lr < 2) {
+    Logger.log("No pronosticos found, returning empty");
+    return { ok: true, jornada, partidos, rows: [] };
+  }
 
   const data = shPro.getRange(2, 1, lr - 1, 10).getValues();
 
@@ -2159,7 +2192,18 @@ function api_getTransparenciaPicks(jornadaOpt) {
     return (a.entry - b.entry);
   });
 
-  return { ok: true, jornada, partidos, rows };
+  Logger.log(`Returning ${rows.length} player entries with picks`);
+  
+  // Convertir firstTs a timestamp para serialización
+  const rowsWithTimestamps = rows.map(r => ({
+    id: r.id,
+    entry: r.entry,
+    nombre: r.nombre,
+    firstTs: r.firstTs ? r.firstTs.getTime() : null,
+    picks: r.picks
+  }));
+  
+  return { ok: true, jornada, partidos, rows: rowsWithTimestamps };
 }
 
 function getLigaMxLogoUrl_(teamName) {

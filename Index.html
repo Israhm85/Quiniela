@@ -476,7 +476,7 @@
   <!-- REGISTRO -->
   <div class="card" id="registerCard">
     <h2>Regístrate</h2>
-    <div class="small">Tu nombre debe ser único (no se permiten repetidos)</div>
+    <div class="small">Escribe tu nombre para entrar. Si ya estás registrado, recuperarás tu sesión.</div>
     <input id="regNombre" placeholder="Tu nombre">
     <div style="margin-top:10px">
       <button onclick="register()">Entrar</button>
@@ -1083,49 +1083,114 @@ function loadTabla(){
 function loadTransparencia(){
   const box = document.getElementById("tablaBox");
   box.innerHTML = `<div class="small">Cargando transparencia…</div>`;
+  
+  console.log("🔍 Loading transparencia for jornada:", SESSION.jornada);
 
   google.script.run.withSuccessHandler(r=>{
+    console.log("✅ Transparencia response:", r);
     if(!r || !r.ok){
-      box.innerHTML = `<div class="small bad">⛔ ${esc(r?.error || "No disponible (cierra la jornada)")}</div>`;
+      const errorMsg = r?.error || "No disponible. Por favor verifica que la jornada esté cerrada correctamente.";
+      console.error("❌ Transparencia error:", errorMsg, "Full response:", r);
+      box.innerHTML = `<div class="small bad">⛔ ${esc(errorMsg)}</div>`;
       return;
     }
 
     let html = `<div class="small" style="margin-bottom:10px">Transparencia — Jornada ${esc(r.jornada)}</div>`;
 
-    (r.rows||[]).forEach(u=>{
-      html += `
-        <div class="card" style="background:rgba(255,255,255,.03)">
-          <div style="font-weight:900;margin-bottom:8px">
-            ${esc(u.nombre)} — Entry ${esc(u.entry)}
-          </div>
-
-          <div style="overflow:auto">
-            <table>
-              <thead>
-                <tr>
-                  <th>Partido</th>
-                  <th class="center">Pick</th>
-                  <th class="center">Marcador</th>
-                  <th class="center">Real</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${(u.picks||[]).map(p=>`
-                  <tr>
-                    <td>${esc(p.local)} vs ${esc(p.visit)}</td>
-                    <td class="center"><strong>${esc(p.pick || "—")}</strong></td>
-                    <td class="center">${esc(p.pickMarc || "—")}</td>
-                    <td class="center">${esc(p.marcadorReal || "—")}</td>
-                  </tr>
-                `).join("")}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      `;
-    });
+    if (!r.rows || r.rows.length === 0) {
+      console.warn("⚠️ No rows returned");
+      html += `<div class="small" style="margin-top:10px;opacity:.7">No hay picks registrados para esta jornada aún.</div>`;
+    } else {
+      console.log("📊 Displaying", r.rows.length, "player entries");
+      
+      // Obtener lista única de partidos de todos los picks
+      const partidosSet = new Map();
+      r.rows.forEach(u => {
+        (u.picks || []).forEach(p => {
+          const key = `${p.local}|||${p.visit}`;  // Usar ||| como separador más seguro
+          if (!partidosSet.has(key)) {
+            partidosSet.set(key, { local: p.local, visit: p.visit, marcadorReal: p.marcadorReal, resReal: p.resReal });
+          }
+        });
+      });
+      const partidos = Array.from(partidosSet.values());
+      
+      if (partidos.length === 0) {
+        html += `<div class="small" style="margin-top:10px;opacity:.7">No hay partidos registrados.</div>`;
+      } else {
+        // Crear tabla matriz
+        html += `<div style="overflow-x:auto;margin-top:10px">
+          <table style="min-width:100%;border-collapse:separate;border-spacing:0">
+            <thead>
+              <tr style="position:sticky;top:0;background:var(--bg);z-index:20;border-bottom:2px solid var(--line);box-shadow:0 2px 4px rgba(0,0,0,0.2)">
+                <th style="position:sticky;left:0;background:var(--bg);z-index:21;padding:8px;text-align:left;border-right:2px solid var(--line);min-width:120px;box-shadow:2px 0 4px rgba(0,0,0,0.15)">Participante</th>`;
+        
+        // Encabezados de partidos (logos)
+        partidos.forEach(p => {
+          html += `<th style="background:var(--bg);padding:8px;text-align:center;min-width:80px">
+            <div style="font-size:0.7em;white-space:nowrap">${esc(p.local)}</div>
+            <div style="font-size:0.6em;opacity:0.6">vs</div>
+            <div style="font-size:0.7em;white-space:nowrap">${esc(p.visit)}</div>
+          </th>`;
+        });
+        
+        html += `</tr></thead><tbody>`;
+        
+        // Filas de participantes
+        r.rows.forEach((u, idx) => {
+          const bgColor = idx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent';
+          html += `<tr style="background:${bgColor};border-bottom:1px solid rgba(255,255,255,0.05)">
+            <td style="position:sticky;left:0;background:var(--bg);padding:8px;border-right:2px solid var(--line);font-weight:600;z-index:5;box-shadow:2px 0 4px rgba(0,0,0,0.15)">
+              ${esc(u.nombre)}<span style="opacity:0.6;font-weight:400;font-size:0.85em"> (${esc(u.entry)})</span>
+            </td>`;
+          
+          // Crear mapa de picks del usuario
+          const picksMap = new Map();
+          (u.picks || []).forEach(p => {
+            const key = `${p.local}|||${p.visit}`;  // Usar mismo separador
+            picksMap.set(key, p);
+          });
+          
+          // Celdas de picks
+          partidos.forEach(partido => {
+            const key = `${partido.local}|||${partido.visit}`;
+            const pick = picksMap.get(key);
+            
+            if (pick && pick.pick) {
+              // Determinar color y estilo según acierto
+              let cellStyle = 'padding:8px;text-align:center;font-weight:700;font-size:1.1em';
+              let pickDisplay = esc(pick.pick);
+              
+              // Usar resReal del pick que contiene el resultado real del partido
+              if (pick.resReal && pick.pick) {
+                // Comparar pick con resultado real
+                if (pick.pick === pick.resReal) {
+                  // Acierto: fondo verde, texto más destacado con checkmark
+                  cellStyle += ';color:#fff;background:var(--ok);border-radius:4px';
+                  pickDisplay = `✓ ${pickDisplay}`;
+                } else {
+                  // Error: texto rojo
+                  cellStyle += ';color:var(--bad)';
+                }
+              }
+              
+              html += `<td style="${cellStyle}">${pickDisplay}</td>`;
+            } else {
+              html += `<td style="padding:8px;text-align:center;opacity:0.3">—</td>`;
+            }
+          });
+          
+          html += `</tr>`;
+        });
+        
+        html += `</tbody></table></div>`;
+      }
+    }
 
     box.innerHTML = html;
+  }).withFailureHandler(err => {
+    console.error("❌ Error loading transparencia:", err);
+    box.innerHTML = `<div class="small bad">⛔ Error al cargar transparencia: ${esc(err?.message || "intenta de nuevo")}</div>`;
   }).api_getTransparenciaPicks(SESSION.jornada);
 }
 
