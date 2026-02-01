@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Demo: PDF Download en Web App</title>
+  <style>
+    :root{
+      --bg:#0f1220;
+      --card:#171a2f;
+      --line:#2a2e52;
+      --accent:#7c9cff;
+      --ok:#35d49a;
+      --bad:#ff6b6b;
+      --txt:#e9ecff;
+    }
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:linear-gradient(180deg,#0c0f1d,#12152b);
+      color:var(--txt);
+      padding:20px;
+    }
+    .wrap{max-width:980px;margin:0 auto}
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      margin-bottom:14px;
+    }
+    h1,h2{margin:.2em 0 .6em 0}
+    .small{opacity:.85;font-size:13px}
+    button{
+      width:100%;
+      padding:12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#0c0f1d;
+      color:var(--txt);
+      font-size:16px;
+      font-weight:700;
+      cursor:pointer;
+      margin-bottom:10px;
+    }
+    button:hover{
+      background:rgba(255,255,255,0.05);
+    }
+    .success-box{
+      background:rgba(53,212,154,.1);
+      border:1px solid #35d49a;
+      border-radius:10px;
+      padding:12px;
+      margin-top:10px;
+    }
+    .success-box strong{
+      color:#35d49a;
+    }
+    .success-box a{
+      color:#35d49a;
+      text-decoration:underline;
+      font-weight:bold;
+    }
+    .highlight{
+      background:rgba(124,156,255,0.2);
+      padding:2px 6px;
+      border-radius:4px;
+      border:1px solid var(--accent);
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎯 Demo: Descarga de PDF desde Web App</h1>
+  
+  <div class="card">
+    <h2>📊 Resultados</h2>
+    <div class="small">Esta es la sección donde los usuarios ven los resultados de la jornada.</div>
+    
+    <button>Ver tabla general</button>
+    <button>👀 Ver todos los picks</button>
+    <button class="highlight">📄 Descargar PDF de jornada ← NUEVO</button>
+    
+    <div id="demo-area">
+      <p class="small" style="margin-top:16px; opacity:0.7">
+        👆 Click en el botón "Descargar PDF de jornada" para ver cómo funciona
+      </p>
+    </div>
+  </div>
+  
+  <div class="card">
+    <h2>🎬 Flujo de Usuario</h2>
+    <div class="small" style="line-height:1.8">
+      <strong>Paso 1:</strong> Usuario accede a la sección "Resultados"<br>
+      <strong>Paso 2:</strong> Click en botón "📄 Descargar PDF de jornada"<br>
+      <strong>Paso 3:</strong> Espera 5-15 segundos mientras se genera<br>
+      <strong>Paso 4:</strong> Ve mensaje de éxito con enlace al PDF<br>
+      <strong>Paso 5:</strong> Click en enlace para abrir PDF en Google Drive<br>
+      <strong>Paso 6:</strong> Descarga o imprime el PDF
+    </div>
+  </div>
+  
+  <div class="card">
+    <h2>✨ Características Principales</h2>
+    <div class="small" style="line-height:1.8">
+      ✅ <strong>Accesible para todos</strong> - Cualquier participante puede generar el PDF<br>
+      ✅ <strong>Sin necesidad de Google Sheets</strong> - Funciona desde la web app<br>
+      ✅ <strong>Validación automática</strong> - Solo jornadas cerradas (o pasadas)<br>
+      ✅ <strong>Enlace directo</strong> - Abre PDF en Google Drive para descargar/imprimir<br>
+      ✅ <strong>Estados claros</strong> - Mensajes de carga, éxito y error<br>
+      ✅ <strong>Diseño responsive</strong> - Funciona en móvil, tablet y desktop
+    </div>
+  </div>
+  
+  <div class="card">
+    <h2>📱 Vista de Ejemplo: Éxito</h2>
+    <div class="success-box">
+      <strong>✅ PDF Generado</strong><br>
+      <div class="small" style="margin-top:8px">
+        PDF de la jornada 5 generado exitosamente.<br><br>
+        <a href="#" onclick="alert('Este es un demo. En producción, este enlace abrirá el PDF en Google Drive.'); return false;">
+          📥 Abrir PDF en nueva pestaña
+        </a>
+      </div>
+    </div>
+  </div>
+  
+  <div class="card">
+    <h2>🔧 Implementación Técnica</h2>
+    <div class="small" style="line-height:1.8">
+      <strong>Backend (Code.gs):</strong><br>
+      • Función <code style="background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px">api_generarPDFJornada(jornada)</code><br>
+      • Valida jornada cerrada<br>
+      • Genera PDF usando DocumentApp<br>
+      • Retorna URL de Google Drive<br><br>
+      
+      <strong>Frontend (Index.html):</strong><br>
+      • Botón en sección Resultados<br>
+      • Función <code style="background:rgba(255,255,255,0.1);padding:2px 6px;border-radius:4px">generarPDF()</code> en JavaScript<br>
+      • Manejo de estados (loading, success, error)<br>
+      • Enlace para abrir PDF
+    </div>
+  </div>
+</div>
+
+<script>
+  // Simulación de la funcionalidad
+  const buttons = document.querySelectorAll('button');
+  const pdfButton = buttons[2]; // El botón del PDF
+  const demoArea = document.getElementById('demo-area');
+  
+  pdfButton.addEventListener('click', function() {
+    // Estado: Generando
+    demoArea.innerHTML = '<p class="small" style="margin-top:16px">Generando PDF de la jornada 5... Por favor espera.</p>';
+    
+    // Simular tiempo de generación
+    setTimeout(() => {
+      // Estado: Éxito
+      demoArea.innerHTML = `
+        <div class="success-box" style="margin-top:16px">
+          <strong>✅ PDF Generado</strong><br>
+          <div class="small" style="margin-top:8px">
+            PDF de la jornada 5 generado exitosamente.<br><br>
+            <a href="#" onclick="alert('¡Perfecto! En producción, este enlace abrirá el PDF real en Google Drive.\\n\\nLos usuarios podrán descargar o imprimir directamente desde ahí.'); return false;">
+              📥 Abrir PDF en nueva pestaña
+            </a>
+          </div>
+        </div>
+      `;
+    }, 2000); // 2 segundos de simulación
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Guía Visual: Corrección de Error appsscript.json</title>
+  <style>
+    :root{
+      --bg:#0f1220;
+      --card:#171a2f;
+      --line:#2a2e52;
+      --accent:#7c9cff;
+      --ok:#35d49a;
+      --bad:#ff6b6b;
+      --warn:#ffd93d;
+      --txt:#e9ecff;
+    }
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:linear-gradient(180deg,#0c0f1d,#12152b);
+      color:var(--txt);
+      padding:40px 20px;
+    }
+    .wrap{max-width:900px;margin:0 auto}
+    h1{text-align:center;color:var(--accent);margin-bottom:10px}
+    .subtitle{text-align:center;opacity:0.8;margin-bottom:40px}
+    
+    .error-box{
+      background:rgba(255,107,107,0.1);
+      border:2px solid var(--bad);
+      border-radius:12px;
+      padding:20px;
+      margin:30px 0;
+    }
+    .error-box strong{color:var(--bad)}
+    
+    .comparison{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:20px;
+      margin:30px 0;
+    }
+    
+    .box{
+      background:var(--card);
+      border:2px solid var(--line);
+      border-radius:12px;
+      padding:20px;
+    }
+    
+    .box.wrong{
+      border-color:var(--bad);
+      background:rgba(255,107,107,0.05);
+    }
+    
+    .box.correct{
+      border-color:var(--ok);
+      background:rgba(53,212,154,0.05);
+    }
+    
+    .box h3{
+      margin:0 0 15px 0;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    
+    .icon{
+      font-size:30px;
+    }
+    
+    .filename{
+      background:rgba(0,0,0,0.3);
+      padding:12px;
+      border-radius:8px;
+      font-family:monospace;
+      font-size:16px;
+      margin:10px 0;
+      border-left:4px solid;
+    }
+    
+    .filename.wrong{border-left-color:var(--bad)}
+    .filename.correct{border-left-color:var(--ok)}
+    
+    .files-list{
+      background:rgba(0,0,0,0.2);
+      padding:15px;
+      border-radius:8px;
+      font-family:monospace;
+      font-size:14px;
+      line-height:2;
+    }
+    
+    .file-item{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    
+    .file-icon{font-size:18px}
+    
+    .solution{
+      background:rgba(53,212,154,0.1);
+      border:2px solid var(--ok);
+      border-radius:12px;
+      padding:20px;
+      margin:30px 0;
+    }
+    
+    .steps{
+      counter-reset:step;
+    }
+    
+    .step{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:8px;
+      padding:15px;
+      margin:15px 0;
+      counter-increment:step;
+      position:relative;
+      padding-left:60px;
+    }
+    
+    .step::before{
+      content:counter(step);
+      position:absolute;
+      left:15px;
+      top:15px;
+      width:35px;
+      height:35px;
+      background:var(--accent);
+      border-radius:50%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:bold;
+      font-size:18px;
+    }
+    
+    .warning{
+      background:rgba(255,217,61,0.1);
+      border:1px solid var(--warn);
+      border-radius:8px;
+      padding:15px;
+      margin:15px 0;
+    }
+    
+    @media(max-width:700px){
+      .comparison{grid-template-columns:1fr}
+      body{padding:20px 10px}
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔧 Error de Sintaxis: appsscript.json</h1>
+  <div class="subtitle">Guía Visual para Corregir el Nombre del Archivo</div>
+
+  <div class="error-box">
+    <strong>❌ Error que estás viendo:</strong><br>
+    <code>SyntaxError: Unexpected token ':', línea 2, archivo appscripts.json.gs</code>
+  </div>
+
+  <h2>🎯 Identificar el Problema</h2>
+  
+  <div class="comparison">
+    <div class="box wrong">
+      <h3><span class="icon">❌</span> INCORRECTO</h3>
+      <div class="filename wrong">appscripts.json.gs</div>
+      <p><strong>Problemas:</strong></p>
+      <ul>
+        <li>Tiene una 's' extra: "app<strong style="color:var(--bad)">s</strong>scripts"</li>
+        <li>Tiene extensión .gs (para código JavaScript)</li>
+        <li>Apps Script lo lee como código, no como JSON</li>
+        <li>Causa error de sintaxis</li>
+      </ul>
+    </div>
+
+    <div class="box correct">
+      <h3><span class="icon">✅</span> CORRECTO</h3>
+      <div class="filename correct">appsscript.json</div>
+      <p><strong>Características:</strong></p>
+      <ul>
+        <li>Sin 's' extra: "appsscript"</li>
+        <li>Extensión .json (archivo de configuración)</li>
+        <li>Apps Script lo lee como JSON/manifest</li>
+        <li>Sin errores</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>📁 Comparación Visual en el Editor</h2>
+
+  <div class="comparison">
+    <div class="box wrong">
+      <h3>❌ Así NO debe verse</h3>
+      <div class="files-list">
+        📁 Archivos<br>
+        <div class="file-item">📄 Code.gs</div>
+        <div class="file-item">📄 Index.html</div>
+        <div class="file-item" style="color:var(--bad);font-weight:bold">📄 appscripts.json.gs</div>
+      </div>
+      <p style="margin-top:15px;color:var(--bad)">
+        ⚠️ El archivo tiene extensión .gs (código)
+      </p>
+    </div>
+
+    <div class="box correct">
+      <h3>✅ Así DEBE verse</h3>
+      <div class="files-list">
+        📁 Archivos<br>
+        <div class="file-item">📄 Code.gs</div>
+        <div class="file-item">📄 Index.html</div>
+        <div class="file-item" style="color:var(--ok);font-weight:bold">📋 appsscript.json</div>
+      </div>
+      <p style="margin-top:15px;color:var(--ok)">
+        ✅ El archivo es tipo manifest/JSON
+      </p>
+    </div>
+  </div>
+
+  <div class="solution">
+    <h2 style="margin-top:0;color:var(--ok)">✅ Solución Rápida</h2>
+    
+    <div class="steps">
+      <div class="step">
+        <strong>Abre el Editor de Apps Script</strong><br>
+        Extensiones → Apps Script
+      </div>
+
+      <div class="step">
+        <strong>Busca el archivo con nombre incorrecto</strong><br>
+        En el panel izquierdo, busca: <code style="background:rgba(255,107,107,0.2);padding:3px 6px;border-radius:4px">appscripts.json.gs</code>
+      </div>
+
+      <div class="step">
+        <strong>Elimina el archivo incorrecto</strong><br>
+        Click derecho → Eliminar/Remove
+      </div>
+
+      <div class="step">
+        <strong>Crea el archivo correcto</strong><br>
+        Menú Ver → Mostrar archivo de manifiesto<br>
+        Esto crea automáticamente: <code style="background:rgba(53,212,154,0.2);padding:3px 6px;border-radius:4px">appsscript.json</code>
+      </div>
+
+      <div class="step">
+        <strong>Copia el contenido JSON</strong><br>
+        Pega el contenido del archivo appsscript.json del repositorio
+      </div>
+
+      <div class="step">
+        <strong>Guarda (Ctrl+S)</strong><br>
+        ¡Listo! Sin errores de sintaxis
+      </div>
+    </div>
+  </div>
+
+  <div class="warning">
+    <strong>⚠️ Importante:</strong><br>
+    El nombre DEBE ser exactamente <code>appsscript.json</code>:
+    <ul style="margin:10px 0 0 0">
+      <li>Sin mayúsculas</li>
+      <li>Sin 's' extra</li>
+      <li>Sin extensión .gs</li>
+      <li>Sin espacios</li>
+    </ul>
+  </div>
+
+  <h2>🔍 Tabla de Errores Comunes</h2>
+  
+  <table style="width:100%;border-collapse:collapse;margin:20px 0">
+    <thead>
+      <tr style="background:rgba(124,156,255,0.2)">
+        <th style="padding:12px;text-align:left;border:1px solid var(--line)">Nombre Incorrecto</th>
+        <th style="padding:12px;text-align:left;border:1px solid var(--line)">Problema</th>
+        <th style="padding:12px;text-align:left;border:1px solid var(--line)">Corrección</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="padding:10px;border:1px solid var(--line);color:var(--bad);font-family:monospace">appscripts.json.gs</td>
+        <td style="padding:10px;border:1px solid var(--line)">Extensión .gs + 's' extra</td>
+        <td style="padding:10px;border:1px solid var(--line);color:var(--ok);font-family:monospace">appsscript.json</td>
+      </tr>
+      <tr>
+        <td style="padding:10px;border:1px solid var(--line);color:var(--bad);font-family:monospace">appsscript.json.gs</td>
+        <td style="padding:10px;border:1px solid var(--line)">Extensión .gs incorrecta</td>
+        <td style="padding:10px;border:1px solid var(--line);color:var(--ok);font-family:monospace">appsscript.json</td>
+      </tr>
+      <tr>
+        <td style="padding:10px;border:1px solid var(--line);color:var(--bad);font-family:monospace">appscripts.json</td>
+        <td style="padding:10px;border:1px solid var(--line)">'s' extra en el nombre</td>
+        <td style="padding:10px;border:1px solid var(--line);color:var(--ok);font-family:monospace">appsscript.json</td>
+      </tr>
+      <tr>
+        <td style="padding:10px;border:1px solid var(--line);color:var(--bad);font-family:monospace">AppScript.json</td>
+        <td style="padding:10px;border:1px solid var(--line)">Mayúsculas incorrectas</td>
+        <td style="padding:10px;border:1px solid var(--line);color:var(--ok);font-family:monospace">appsscript.json</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="text-align:center;margin-top:40px;opacity:0.7">
+    <p>📖 Para más detalles: <a href="#" style="color:var(--accent)">SOLUCION_ERROR_SINTAXIS_APPSSCRIPT.md</a></p>
+    <p>⚡ Configuración de permisos: <a href="#" style="color:var(--accent)">GUIA_RAPIDA_PERMISOS.md</a></p>
+  </div>
+</div>
+</body>
+</html>

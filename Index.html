@@ -514,7 +514,9 @@
 
     <button class="secondary" style="margin-bottom:10px" onclick="loadTabla()">Ver tabla general</button>
     <button class="secondary" style="margin-bottom:10px" onclick="loadTransparencia()">👀 Ver todos los picks</button>
+    <button class="secondary" style="margin-bottom:10px" onclick="generarPDF()">📄 Descargar PDF de jornada</button>
 
+    <div id="pdfMsg" class="small" style="margin-top:8px"></div>
     <div id="tablaBox"></div>
   </div>
 
@@ -1194,6 +1196,40 @@ function loadTransparencia(){
   }).api_getTransparenciaPicks(SESSION.jornada);
 }
 
+/* ---------- GENERAR PDF ---------- */
+function generarPDF(){
+  const msgBox = document.getElementById("pdfMsg");
+  msgBox.innerHTML = `<div class="small">Generando PDF de la jornada ${SESSION.jornada}... Por favor espera.</div>`;
+  
+  console.log("📄 Generating PDF for jornada:", SESSION.jornada);
+
+  google.script.run.withSuccessHandler(r=>{
+    console.log("✅ PDF generation response:", r);
+    if(!r || !r.ok){
+      const errorMsg = r?.error || "No se pudo generar el PDF.";
+      console.error("❌ PDF generation error:", errorMsg);
+      msgBox.innerHTML = `<div class="small bad">⛔ ${esc(errorMsg)}</div>`;
+      return;
+    }
+
+    console.log("✅ PDF URL:", r.pdfUrl);
+    msgBox.innerHTML = `
+      <div class="card" style="background:rgba(53,212,154,.1);border-color:#35d49a;margin-top:10px;margin-bottom:10px">
+        <strong style="color:#35d49a">✅ PDF Generado</strong><br>
+        <div class="small" style="margin-top:8px">
+          ${esc(r.message || `PDF de la jornada ${r.jornada} generado exitosamente.`)}<br><br>
+          <a href="${esc(r.pdfUrl)}" target="_blank" style="color:#35d49a;text-decoration:underline;font-weight:bold">
+            📥 Abrir PDF en nueva pestaña
+          </a>
+        </div>
+      </div>
+    `;
+  }).withFailureHandler(err => {
+    console.error("❌ Error generating PDF:", err);
+    msgBox.innerHTML = `<div class="small bad">⛔ Error al generar PDF: ${esc(err?.message || "intenta de nuevo")}</div>`;
+  }).api_generarPDFJornada(SESSION.jornada);
+}
+
 /* ---------- EXPONER FUNCIONES AL ÁMBITO GLOBAL ---------- */
 // Necesario para que onclick handlers puedan acceder a estas funciones
 window.register = register;
@@ -1201,6 +1237,7 @@ window.submitAll = submitAll;
 window.openTabla = openTabla;
 window.loadTabla = loadTabla;
 window.loadTransparencia = loadTransparencia;
+window.generarPDF = generarPDF;
 window.handleCheckboxChange = handleCheckboxChange;
 window.loadPrizePoolInfo = loadPrizePoolInfo;
 
