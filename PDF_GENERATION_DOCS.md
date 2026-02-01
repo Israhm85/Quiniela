@@ -17,7 +17,7 @@ Función que genera automáticamente un archivo PDF con todos los participantes 
 
 ## Cómo Usar
 
-### Desde el Menú
+### Desde el Menú de Google Sheets
 
 1. Abre el archivo de Google Sheets de la Quiniela
 2. Ve al menú **Quiniela** en la barra superior
@@ -25,6 +25,20 @@ Función que genera automáticamente un archivo PDF con todos los participantes 
 4. Ingresa el número de jornada que deseas generar
 5. Confirma la generación (si la jornada no está cerrada, se pedirá confirmación)
 6. El sistema generará el PDF y mostrará un enlace de acceso
+
+### Desde la Aplicación Web (NUEVO)
+
+1. Accede a la aplicación web de la Quiniela
+2. Entra con tu nombre (si aún no lo has hecho)
+3. Click en **"📊 Ver tabla / transparencia"**
+4. Click en **"📄 Descargar PDF de jornada"**
+5. Espera unos segundos mientras se genera
+6. Click en el enlace **"📥 Abrir PDF en nueva pestaña"**
+7. El PDF se abrirá en Google Drive donde puedes descargarlo o imprimirlo
+
+**Nota:** La opción de PDF desde la web app está disponible para todos los participantes, no solo para administradores. Solo se permite generar PDFs de jornadas cerradas (o jornadas pasadas).
+
+**Ver más:** [Documentación completa de acceso desde web app](ACCESO_PDF_WEBAPP.md)
 
 ### Desde Código (API)
 
