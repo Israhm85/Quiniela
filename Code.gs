@@ -2207,6 +2207,43 @@ function api_getTransparenciaPicks(jornadaOpt) {
   return { ok: true, jornada, partidos, rows: rowsWithTimestamps };
 }
 
+/***************
+ * API: GENERAR PDF DE JORNADA
+ * Permite a los participantes obtener el PDF de una jornada desde la web app
+ * Solo disponible para jornadas cerradas
+ ***************/
+function api_generarPDFJornada(jornadaOpt) {
+  const jornada = Number(jornadaOpt) || Number(getConfig_("JornadaActual")) || 1;
+  
+  if (!jornada || jornada < 1) {
+    return { ok: false, error: "Número de jornada inválido." };
+  }
+  
+  // Verificar si la jornada está cerrada (solo si es la jornada actual)
+  const jornadaActual = Number(getConfig_("JornadaActual")) || 1;
+  if (jornada === jornadaActual && !isJornadaCerrada_()) {
+    return { ok: false, error: "La jornada actual aún no está cerrada. El PDF estará disponible cuando se cierre la jornada." };
+  }
+  
+  try {
+    const pdfUrl = generarPDFJornadaInterno_(jornada);
+    
+    if (pdfUrl) {
+      return { 
+        ok: true, 
+        jornada, 
+        pdfUrl,
+        message: `PDF generado exitosamente para la jornada ${jornada}.`
+      };
+    } else {
+      return { ok: false, error: "No se pudo generar el PDF. Verifica que haya datos para la jornada seleccionada." };
+    }
+  } catch (error) {
+    Logger.log(`Error generando PDF: ${error.toString()}`);
+    return { ok: false, error: `Error al generar PDF: ${error.toString()}` };
+  }
+}
+
 function getLigaMxLogoUrl_(teamName) {
   const nameNorm = normalizeTeam_(teamName);
   if (!nameNorm) return "";
