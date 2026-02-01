@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Flujo de Autorización - Apps Script</title>
+  <style>
+    :root{
+      --bg:#0f1220;
+      --card:#171a2f;
+      --line:#2a2e52;
+      --accent:#7c9cff;
+      --ok:#35d49a;
+      --bad:#ff6b6b;
+      --warn:#ffd93d;
+      --txt:#e9ecff;
+    }
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:linear-gradient(180deg,#0c0f1d,#12152b);
+      color:var(--txt);
+      padding:40px 20px;
+    }
+    .wrap{max-width:1000px;margin:0 auto}
+    h1{text-align:center;color:var(--accent);margin-bottom:10px}
+    .subtitle{text-align:center;opacity:0.8;margin-bottom:40px}
+    .flow{
+      display:flex;
+      flex-direction:column;
+      gap:20px;
+    }
+    .step{
+      background:var(--card);
+      border:2px solid var(--line);
+      border-radius:16px;
+      padding:24px;
+      position:relative;
+    }
+    .step::before{
+      content:attr(data-step);
+      position:absolute;
+      top:-15px;
+      left:20px;
+      background:var(--accent);
+      color:#fff;
+      padding:6px 16px;
+      border-radius:20px;
+      font-weight:bold;
+      font-size:14px;
+    }
+    .step h3{
+      margin:10px 0 15px 0;
+      color:var(--accent);
+    }
+    .step p{
+      margin:8px 0;
+      line-height:1.6;
+    }
+    .code{
+      background:rgba(0,0,0,0.3);
+      padding:16px;
+      border-radius:8px;
+      border-left:4px solid var(--accent);
+      font-family:monospace;
+      font-size:13px;
+      overflow-x:auto;
+      margin:12px 0;
+    }
+    .warning{
+      background:rgba(255,217,61,0.1);
+      border:1px solid var(--warn);
+      border-radius:8px;
+      padding:12px 16px;
+      margin:12px 0;
+    }
+    .warning strong{
+      color:var(--warn);
+    }
+    .success{
+      background:rgba(53,212,154,0.1);
+      border:1px solid var(--ok);
+      border-radius:8px;
+      padding:12px 16px;
+      margin:12px 0;
+    }
+    .success strong{
+      color:var(--ok);
+    }
+    .error{
+      background:rgba(255,107,107,0.1);
+      border:1px solid var(--bad);
+      border-radius:8px;
+      padding:12px 16px;
+      margin:12px 0;
+    }
+    .error strong{
+      color:var(--bad);
+    }
+    .arrow{
+      text-align:center;
+      font-size:30px;
+      color:var(--accent);
+      margin:10px 0;
+    }
+    .scope-list{
+      background:rgba(124,156,255,0.1);
+      border-radius:8px;
+      padding:12px;
+      margin:12px 0;
+    }
+    .scope-list li{
+      margin:8px 0;
+      line-height:1.5;
+    }
+    .highlight{
+      background:rgba(124,156,255,0.2);
+      padding:2px 6px;
+      border-radius:4px;
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔐 Flujo de Autorización de Google Apps Script</h1>
+  <div class="subtitle">Solución al Error de Permisos de DocumentApp</div>
+
+  <div class="error">
+    <strong>❌ Error Original:</strong><br>
+    <code>Error al generar PDF: Exception: No cuentas con el permiso para llamar a DocumentApp.create. Permisos necesarios: https://www.googleapis.com/auth/documents</code>
+  </div>
+
+  <div class="flow">
+    <div class="step" data-step="Paso 1">
+      <h3>📝 Crear/Actualizar appsscript.json</h3>
+      <p><strong>Dónde:</strong> Editor de Apps Script (Extensiones → Apps Script)</p>
+      <p><strong>Acción:</strong> Crear o editar el archivo <span class="highlight">appsscript.json</span></p>
+      
+      <div class="code">{
+  "timeZone": "America/Mexico_City",
+  "runtimeVersion": "V8",
+  "webapp": {
+    "executeAs": "USER_DEPLOYING",
+    "access": "ANYONE"
+  },
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/documents",      ← NUEVO
+    "https://www.googleapis.com/auth/drive",          ← NUEVO
+    "https://www.googleapis.com/auth/script.external_request",
+    "https://www.googleapis.com/auth/userinfo.email"
+  ]
+}</div>
+      
+      <p><strong>Por qué:</strong> Declara explícitamente los permisos que el script necesita</p>
+    </div>
+
+    <div class="arrow">↓</div>
+
+    <div class="step" data-step="Paso 2">
+      <h3>💾 Guardar el Archivo</h3>
+      <p><strong>Acción:</strong> Click en guardar 💾 o Ctrl+S</p>
+      <p><strong>Resultado:</strong> El manifest está actualizado en el proyecto</p>
+    </div>
+
+    <div class="arrow">↓</div>
+
+    <div class="step" data-step="Paso 3">
+      <h3>▶️ Ejecutar Función para Forzar Autorización</h3>
+      <p><strong>Función sugerida:</strong> <span class="highlight">onOpen</span> (cualquiera funciona)</p>
+      <p><strong>Acción:</strong> Seleccionar función → Click en Ejecutar</p>
+      
+      <div class="warning">
+        <strong>⚠️ Aparecerá:</strong> "Se requiere autorización"<br>
+        Esto es <strong>normal y esperado</strong>
+      </div>
+    </div>
+
+    <div class="arrow">↓</div>
+
+    <div class="step" data-step="Paso 4">
+      <h3>🔍 Revisar Permisos</h3>
+      <p><strong>Aparecerá:</strong> Diálogo de autorización de Google</p>
+      <p><strong>Acción:</strong> Click en "Revisar permisos"</p>
+      
+      <div class="warning">
+        <strong>⚠️ "Esta app no está verificada"</strong><br>
+        Esto es <strong>normal para scripts personales</strong><br>
+        • Click en "Configuración avanzada"<br>
+        • Click en "Ir a [Nombre del Proyecto] (no seguro)"
+      </div>
+    </div>
+
+    <div class="arrow">↓</div>
+
+    <div class="step" data-step="Paso 5">
+      <h3>✅ Aceptar Permisos</h3>
+      <p><strong>Permisos solicitados:</strong></p>
+      
+      <div class="scope-list">
+        <ul>
+          <li>📊 <strong>Ver y administrar hojas de cálculo</strong> - Para leer/escribir datos</li>
+          <li>📄 <strong>Ver y administrar documentos</strong> - Para crear PDFs (NUEVO)</li>
+          <li>💾 <strong>Ver y administrar archivos de Drive</strong> - Para guardar PDFs (NUEVO)</li>
+          <li>🌐 <strong>Conectarse a servicios externos</strong> - Para ESPN API</li>
+          <li>📧 <strong>Ver tu dirección de correo</strong> - Para identificar admin</li>
+        </ul>
+      </div>
+      
+      <p><strong>Acción:</strong> Click en "Permitir"</p>
+    </div>
+
+    <div class="arrow">↓</div>
+
+    <div class="step" data-step="Paso 6">
+      <h3>🎉 Verificar Funcionamiento</h3>
+      <p><strong>Acciones:</strong></p>
+      <p>1. Cierra el editor de Apps Script</p>
+      <p>2. Recarga el Spreadsheet</p>
+      <p>3. Prueba generar un PDF:</p>
+      <ul>
+        <li>Desde menú Sheets: <strong>Quiniela</strong> → <strong>📄 Generar PDF de jornada</strong></li>
+        <li>Desde web app: <strong>Resultados</strong> → <strong>📄 Descargar PDF de jornada</strong></li>
+      </ul>
+      
+      <div class="success">
+        <strong>✅ Éxito:</strong> El PDF se generará sin errores<br>
+        Todos los usuarios ahora pueden generar PDFs
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:40px;padding:24px;background:var(--card);border-radius:16px;border:2px solid var(--accent)">
+    <h2 style="margin-top:0;color:var(--accent)">🎯 Resumen</h2>
+    <ul style="line-height:1.8">
+      <li><strong>Frecuencia:</strong> Solo necesitas hacer esto UNA VEZ</li>
+      <li><strong>Tiempo total:</strong> Aproximadamente 5 minutos</li>
+      <li><strong>Quién lo hace:</strong> El administrador del spreadsheet</li>
+      <li><strong>Beneficio:</strong> Todos los usuarios pueden generar PDFs después</li>
+      <li><strong>Seguridad:</strong> Es tu propio script, completamente seguro</li>
+    </ul>
+  </div>
+
+  <div style="margin-top:20px;text-align:center;opacity:0.7">
+    <p>📖 Para más detalles, consulta: <a href="#" style="color:var(--accent)">SOLUCION_PERMISOS_DOCUMENTAPP.md</a></p>
+    <p>⚡ Guía rápida: <a href="#" style="color:var(--accent)">GUIA_RAPIDA_PERMISOS.md</a></p>
+  </div>
+</div>
+</body>
+</html>
