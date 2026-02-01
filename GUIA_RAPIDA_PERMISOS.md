@@ -6,6 +6,20 @@
 Error al generar PDF: Exception: No cuentas con el permiso para llamar a DocumentApp.create
 ```
 
+## ⚠️ Nota Importante sobre el Nombre del Archivo
+
+**Si recibes error de sintaxis:** `SyntaxError: Unexpected token ':'`
+
+El archivo DEBE llamarse exactamente: **`appsscript.json`**
+
+❌ NO usar: `appscripts.json.gs` (nombre incorrecto)  
+❌ NO usar: `appsscript.json.gs` (extensión incorrecta)  
+✅ USAR: `appsscript.json` (correcto)
+
+📖 Si tienes este error, consulta: [SOLUCION_ERROR_SINTAXIS_APPSSCRIPT.md](SOLUCION_ERROR_SINTAXIS_APPSSCRIPT.md)
+
+---
+
 ## Solución en 5 Pasos (5 minutos)
 
 ### 1️⃣ Abre el Editor de Apps Script
@@ -13,8 +27,18 @@ Error al generar PDF: Exception: No cuentas con el permiso para llamar a Documen
 - Menú: **Extensiones** → **Apps Script**
 
 ### 2️⃣ Crea/Actualiza el archivo `appsscript.json`
+
+**⚠️ IMPORTANTE: El nombre DEBE ser exactamente `appsscript.json`**
+- NO usar: `appscripts.json.gs` ❌
+- NO usar: `appsscript.json.gs` ❌
+- USAR: `appsscript.json` ✅
+
+**Pasos:**
 - En el panel izquierdo, busca el archivo `appsscript.json`
-- Si no existe, créalo: Click en **+** → **Script** → Nómbralo `appsscript.json`
+- Si no existe:
+  - Ve al menú **Ver** → **Mostrar archivo de manifiesto** (esto lo crea automáticamente)
+  - O click en **+** junto a "Archivos" y asegúrate de nombrarlo exactamente `appsscript.json`
+- Si tienes un archivo con nombre incorrecto (como `appscripts.json.gs`), elimínalo primero
 - Copia y pega este contenido:
 
 ```json
