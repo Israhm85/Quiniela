@@ -1,5 +1,12 @@
 # Generación de PDF de Jornada
 
+## ⚠️ IMPORTANTE: Autorización Requerida
+
+**Si obtienes un error de permisos** al generar PDFs, consulta la guía:  
+📖 **[Solución: Error de Permisos DocumentApp](SOLUCION_PERMISOS_DOCUMENTAPP.md)**
+
+Este error ocurre porque Google Apps Script necesita permisos explícitos para crear documentos y archivos. La guía te explica cómo re-autorizar el script (es un proceso de 5 minutos).
+
 ## Descripción
 
 Función que genera automáticamente un archivo PDF con todos los participantes y sus selecciones ("picks") para una jornada específica. Esta funcionalidad facilita la creación de reportes claros y organizados para las jornadas completadas.
@@ -137,9 +144,22 @@ Jornada 1 - 9 partidos de Liga MX + 1 de La Liga
 - ✅ Formato PDF (exportación final)
 
 ### Permisos Requeridos
-- Acceso a Google Sheets (lectura)
-- Acceso a Google Drive (escritura)
-- Acceso a Google Docs (creación/eliminación)
+
+**Importante:** Esta funcionalidad requiere permisos específicos de Google Apps Script.
+
+Si obtienes un error como:
+```
+Error al generar PDF: Exception: No cuentas con el permiso para llamar a DocumentApp.create
+```
+
+**Solución:** Consulta la [Guía de Autorización](SOLUCION_PERMISOS_DOCUMENTAPP.md) para re-autorizar el script.
+
+**Permisos necesarios:**
+- ✅ Acceso a Google Sheets (lectura) - `spreadsheets` scope
+- ✅ Acceso a Google Drive (escritura) - `drive` scope  
+- ✅ Acceso a Google Docs (creación/eliminación) - `documents` scope
+
+El proyecto incluye un archivo `appsscript.json` que declara todos estos permisos automáticamente.
 
 ## Funciones Relacionadas
 
@@ -166,11 +186,29 @@ Jornada 1 - 9 partidos de Liga MX + 1 de La Liga
 
 ## Solución de Problemas
 
+### ❌ "No cuentas con el permiso para llamar a DocumentApp.create"
+
+**Error completo:**
+```
+Error al generar PDF: Exception: No cuentas con el permiso para llamar a DocumentApp.create. 
+Permisos necesarios: https://www.googleapis.com/auth/documents
+```
+
+**Causa**: El script no tiene los permisos OAuth necesarios para crear documentos  
+**Solución**: 📖 **[Sigue esta guía completa](SOLUCION_PERMISOS_DOCUMENTAPP.md)** para re-autorizar el script
+
+**Resumen rápido:**
+1. Asegúrate de que existe el archivo `appsscript.json` en tu proyecto
+2. Abre el Editor de Apps Script (Extensiones → Apps Script)
+3. Ejecuta cualquier función para forzar la autorización
+4. Acepta los permisos cuando se soliciten
+5. Recarga el Spreadsheet
+
 ### "No hay partidos para la jornada X"
 **Causa**: La jornada no tiene partidos registrados en la hoja PARTIDOS  
 **Solución**: Verificar que los partidos estén correctamente importados/registrados
 
-### "Error al generar PDF"
+### "Error al generar PDF" (genérico)
 **Causa**: Permisos insuficientes o error en Google Drive  
 **Solución**: Verificar permisos de la aplicación y espacio en Drive
 

@@ -1,5 +1,17 @@
 # Acceso al PDF desde la Aplicación Web
 
+## ⚠️ IMPORTANTE: Autorización Requerida
+
+**Si obtienes un error de permisos** al generar PDFs desde la web app:
+```
+Error al generar PDF: Exception: No cuentas con el permiso para llamar a DocumentApp.create
+```
+
+**Solución:** El administrador del spreadsheet debe seguir esta guía:  
+📖 **[Solución: Error de Permisos DocumentApp](SOLUCION_PERMISOS_DOCUMENTAPP.md)**
+
+Este es un proceso de autorización de una sola vez que toma aproximadamente 5 minutos.
+
 ## Resumen
 
 Se ha implementado la funcionalidad para que los participantes puedan acceder y descargar el PDF con todos los pronósticos desde la aplicación web de la Quiniela.
@@ -263,6 +275,15 @@ Generando PDF de la jornada 5... Por favor espera.
 
 ## Manejo de Errores
 
+### Error 0: Permisos de DocumentApp (MÁS COMÚN)
+```javascript
+❌ Error al generar PDF: Exception: No cuentas con el permiso para 
+   llamar a DocumentApp.create. Permisos necesarios: 
+   https://www.googleapis.com/auth/documents
+```
+**Causa:** El script no tiene los permisos OAuth necesarios para crear documentos  
+**Solución:** 📖 **[Sigue esta guía completa](SOLUCION_PERMISOS_DOCUMENTAPP.md)** - El administrador debe re-autorizar el script (proceso de 5 minutos)
+
 ### Error 1: Jornada no cerrada
 ```javascript
 ❌ La jornada actual aún no está cerrada. El PDF estará 
@@ -278,7 +299,7 @@ Generando PDF de la jornada 5... Por favor espera.
 **Causa:** Jornada sin partidos registrados
 **Solución:** Verificar que los partidos estén importados
 
-### Error 3: Error de permisos
+### Error 3: Error de permisos genérico
 ```javascript
 ❌ Error al generar PDF: Exception: Access denied
 ```

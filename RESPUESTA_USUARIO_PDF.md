@@ -1,5 +1,18 @@
 # ✅ IMPLEMENTACIÓN COMPLETADA: Acceso a PDF desde la Web App
 
+## ⚠️ Nota Importante sobre Permisos
+
+**Si recibes un error de permisos** al intentar generar el PDF:
+```
+Error al generar PDF: Exception: No cuentas con el permiso para llamar a DocumentApp.create
+```
+
+**No te preocupes, es normal la primera vez.** El administrador del spreadsheet solo necesita autorizar el script una vez.
+
+📖 **[Ver guía de solución completa aquí](SOLUCION_PERMISOS_DOCUMENTAPP.md)** (proceso de 5 minutos)
+
+---
+
 ## Respuesta a tu Pregunta
 
 **Tu pregunta:** "¿Puedo acceder a este PDF desde la app de la quiniela? Si no es así, ¿hay un modo de adquirirlo desde la web app por si los participantes quieren imprimir la hoja?"
@@ -180,6 +193,23 @@ Verás un mensaje verde con el enlace:
 
 ## 📋 ¿Qué Pasa Si...?
 
+### "¿Me sale un error de permisos al generar el PDF?"
+
+**Error que podrías ver:**
+```
+Error al generar PDF: Exception: No cuentas con el permiso para llamar a DocumentApp.create
+```
+
+**Respuesta:** Este es el error más común la primera vez. **No es tu culpa.** El administrador del spreadsheet necesita autorizar el script una sola vez. 
+
+📖 **[Guía de solución paso a paso](SOLUCION_PERMISOS_DOCUMENTAPP.md)**
+
+**Resumen para el administrador:**
+1. Abrir el Editor de Apps Script (Extensiones → Apps Script)
+2. Ejecutar cualquier función para forzar autorización
+3. Aceptar los permisos cuando se soliciten
+4. Listo - funcionará para todos
+
 ### "¿Qué pasa si la jornada no está cerrada?"
 **Respuesta:** Verás un mensaje indicando que esperes a que se cierre la jornada. El administrador debe marcar la jornada como cerrada primero.
 
@@ -190,7 +220,7 @@ Verás un mensaje verde con el enlace:
 **Respuesta:** Sí, puedes generar PDFs de cualquier jornada pasada sin restricciones.
 
 ### "¿Necesito permisos especiales?"
-**Respuesta:** No. Cualquier participante registrado puede generar el PDF.
+**Respuesta:** No. Cualquier participante registrado puede generar el PDF (después de que el administrador autorice el script).
 
 ### "¿Puedo descargar el PDF a mi celular?"
 **Respuesta:** Sí. El PDF se abre en Google Drive y desde ahí puedes descargarlo a cualquier dispositivo.
