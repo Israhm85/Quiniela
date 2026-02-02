@@ -795,8 +795,8 @@ function bootstrap(){
               renderForm();
               console.log("📥 Calling loadMyPicks()");
               loadMyPicks();
-              console.log("💰 Calling loadPrizePool()");
-              loadPrizePool();
+              console.log("💰 Calling loadPrizePoolInfo()");
+              loadPrizePoolInfo();
               console.log("✅ bootstrap() completed successfully");
             })
             .withFailureHandler(err => {
@@ -811,7 +811,7 @@ function bootstrap(){
               document.getElementById("jorTitle").innerHTML = `Jornada ${r.jornada}`;
               renderForm();
               loadMyPicks();
-              loadPrizePool();
+              loadPrizePoolInfo();
             })
             .api_isPlayerAdmin(SESSION.token);
         })
