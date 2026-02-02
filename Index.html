@@ -1434,7 +1434,14 @@ function openDecimoPartido(){
 }
 
 function backToForm(){
+  // Hide all admin and management cards
+  document.getElementById("adminPanel").style.display = "none";
+  document.getElementById("adminLoginCard").style.display = "none";
   document.getElementById("decimoCard").style.display = "none";
+  document.getElementById("jugadoresCard").style.display = "none";
+  document.getElementById("tablaCard").style.display = "none";
+  
+  // Show the main form
   document.getElementById("formCard").style.display = "block";
 }
 
