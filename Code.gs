@@ -2967,38 +2967,7 @@ function generarPDFJornadaInterno_(jornada) {
   
   body.appendParagraph(""); // Espacio
   
-  // 7. Agregar tabla de partidos
-  const tituloPartidos = body.appendParagraph("PARTIDOS DE LA JORNADA");
-  tituloPartidos.setHeading(DocumentApp.ParagraphHeading.HEADING2);
-  
-  const tablaPartidos = body.appendTable();
-  const headerPartidos = tablaPartidos.appendTableRow();
-  headerPartidos.appendTableCell("#");
-  headerPartidos.appendTableCell("Local");
-  headerPartidos.appendTableCell("Visitante");
-  headerPartidos.appendTableCell("Marcador");
-  headerPartidos.appendTableCell("Resultado");
-  
-  // Estilo del header
-  for (let i = 0; i < 5; i++) {
-    headerPartidos.getCell(i).setBackgroundColor("#4a86e8").getChild(0).asParagraph().setBold(true);
-  }
-  
-  partidos.forEach((p, idx) => {
-    const fila = tablaPartidos.appendTableRow();
-    fila.appendTableCell(String(idx + 1));
-    fila.appendTableCell(p.local);
-    fila.appendTableCell(p.visitante);
-    fila.appendTableCell(p.marcador || "-");
-    fila.appendTableCell(p.resultado || "-");
-  });
-  
-  body.appendParagraph(""); // Espacio
-  
-  // 8. Agregar pronósticos por participante
-  const tituloPronosticos = body.appendParagraph("PRONÓSTICOS DE LOS PARTICIPANTES");
-  tituloPronosticos.setHeading(DocumentApp.ParagraphHeading.HEADING2);
-  
+  // 7. Crear tabla matriz con todos los participantes y sus picks
   if (participantes.size === 0) {
     body.appendParagraph("No hay pronósticos registrados para esta jornada.").setItalic(true);
   } else {
@@ -3010,50 +2979,92 @@ function generarPDFJornadaInterno_(jornada) {
         return a.entry - b.entry;
       });
     
+    // Crear tabla matriz
+    const tablaMatriz = body.appendTable();
+    
+    // FILA DE ENCABEZADO: Participante + cada partido
+    const headerRow = tablaMatriz.appendTableRow();
+    
+    // Primera celda: Participante
+    const cellParticipante = headerRow.appendTableCell("Participante\n(Pts)");
+    cellParticipante.setBackgroundColor("#4a86e8");
+    cellParticipante.getChild(0).asParagraph().setBold(true);
+    cellParticipante.setWidth(120);
+    
+    // Celdas de encabezado para cada partido
+    partidos.forEach(p => {
+      const matchText = `${p.local}\nvs\n${p.visitante}`;
+      const cellMatch = headerRow.appendTableCell(matchText);
+      cellMatch.setBackgroundColor("#4a86e8");
+      cellMatch.getChild(0).asParagraph().setBold(true).setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+      cellMatch.setWidth(70);
+    });
+    
+    // FILAS DE PARTICIPANTES
     participantesOrdenados.forEach((part, idx) => {
-      // Nombre del participante con entry si es necesario
+      const filaParticipante = tablaMatriz.appendTableRow();
+      
+      // Primera celda: Nombre del participante con puntos totales
       const nombreCompleto = part.entry > 1 
-        ? `${part.nombre} (Entry ${part.entry})` 
+        ? `${part.nombre} (${part.entry})` 
         : part.nombre;
       
       const jugadorInfo = jugadoresMap.get(part.id);
       const estadoPago = jugadorInfo?.pagado ? " ✓" : " ⚠";
       
-      const nombreParticipante = body.appendParagraph(
-        `${idx + 1}. ${nombreCompleto}${estadoPago} - ${part.puntosTotal} puntos`
+      const cellNombre = filaParticipante.appendTableCell(
+        `${nombreCompleto}${estadoPago}\n(${part.puntosTotal} pts)`
       );
-      nombreParticipante.setHeading(DocumentApp.ParagraphHeading.HEADING3);
       
-      // Tabla de picks del participante
-      const tablaPicks = body.appendTable();
-      const headerPicks = tablaPicks.appendTableRow();
-      headerPicks.appendTableCell("Local");
-      headerPicks.appendTableCell("Visitante");
-      headerPicks.appendTableCell("Pick");
-      headerPicks.appendTableCell("Marcador");
-      headerPicks.appendTableCell("Pts");
+      // Fondo alternado para facilitar lectura
+      const bgColor = idx % 2 === 0 ? "#f3f3f3" : "#ffffff";
+      cellNombre.setBackgroundColor(bgColor);
+      cellNombre.getChild(0).asParagraph().setBold(true);
       
-      // Estilo del header
-      for (let i = 0; i < 5; i++) {
-        headerPicks.getCell(i).setBackgroundColor("#e0e0e0").getChild(0).asParagraph().setBold(true);
-      }
-      
+      // Crear mapa de picks del participante para búsqueda rápida
+      const picksMap = new Map();
       part.picks.forEach(pick => {
-        const fila = tablaPicks.appendTableRow();
-        fila.appendTableCell(pick.local);
-        fila.appendTableCell(pick.visitante);
-        fila.appendTableCell(pick.pick || "-");
-        fila.appendTableCell(pick.pickMarcador || "-");
-        fila.appendTableCell(String(pick.puntos || 0));
-        
-        // Resaltar si ganó puntos
-        if (pick.puntos > 0) {
-          fila.getCell(4).setBackgroundColor("#d9ead3");
-        }
+        const key = `${pick.local}|||${pick.visitante}`;
+        picksMap.set(key, pick);
       });
       
-      body.appendParagraph(""); // Espacio entre participantes
+      // Celdas para cada partido
+      partidos.forEach(partido => {
+        const key = `${partido.local}|||${partido.visitante}`;
+        const pick = picksMap.get(key);
+        
+        if (pick && pick.pick) {
+          // Determinar si acertó comparando con el resultado del partido
+          const acerto = pick.puntos > 0;
+          const pickText = acerto ? `✓ ${pick.pick}` : pick.pick;
+          
+          const cellPick = filaParticipante.appendTableCell(pickText);
+          cellPick.getChild(0).asParagraph()
+            .setAlignment(DocumentApp.HorizontalAlignment.CENTER)
+            .setBold(true);
+          
+          // Color de fondo: verde si acertó, blanco/gris si no
+          if (acerto) {
+            cellPick.setBackgroundColor("#d9ead3");
+          } else {
+            cellPick.setBackgroundColor(bgColor);
+          }
+        } else {
+          // Sin pick
+          const cellEmpty = filaParticipante.appendTableCell("—");
+          cellEmpty.getChild(0).asParagraph().setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+          cellEmpty.setBackgroundColor(bgColor);
+        }
+      });
     });
+    
+    // Agregar nota explicativa
+    body.appendParagraph(""); // Espacio
+    const nota = body.appendParagraph(
+      "Nota: ✓ = Acierto (fondo verde) | ⚠ = No pagado | — = Sin pronóstico"
+    );
+    nota.setItalic(true);
+    nota.getChild(0).asParagraph().setFontSize(9);
   }
   
   // 9. Guardar y cerrar documento
