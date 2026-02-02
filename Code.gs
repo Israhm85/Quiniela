@@ -2247,6 +2247,24 @@ function api_generarPDFJornada(jornadaOpt) {
 /***************
  * API: DÉCIMO PARTIDO
  ***************/
+function api_isPlayerAdmin(token) {
+  const player = findJugadorByToken_(token);
+  if (!player) return { ok: false, isAdmin: false, error: "Token inválido" };
+  
+  const isAdmin = isPlayerAdminByName_(player.nombre);
+  return { ok: true, isAdmin, nombre: player.nombre };
+}
+
+function isPlayerAdminByName_(playerName) {
+  const adminNames = String(getConfig_("AdminPlayers") || "").trim();
+  if (!adminNames) return false;
+  
+  const adminList = adminNames.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
+  const nameNormalized = String(playerName || "").trim().toLowerCase();
+  
+  return nameNormalized && adminList.includes(nameNormalized);
+}
+
 function api_getDecimoPartido(jornadaOpt) {
   const jornada = Number(jornadaOpt) || Number(getConfig_("JornadaActual")) || 1;
   const decimo = getDecimoPartidoPorJornada_(jornada);
@@ -2271,6 +2289,17 @@ function api_getEquiposPorLiga(liga) {
 }
 
 function api_guardarDecimoPartido(payload) {
+  // Check admin permission
+  const token = String(payload?.token || "").trim();
+  const player = findJugadorByToken_(token);
+  if (!player) {
+    return { ok: false, error: "Token inválido. Inicia sesión nuevamente." };
+  }
+  
+  if (!isPlayerAdminByName_(player.nombre)) {
+    return { ok: false, error: "Solo los administradores pueden configurar el décimo partido." };
+  }
+  
   const liga = String(payload?.liga || "").toUpperCase().trim();
   const localNombre = String(payload?.local || "").trim();
   const visitNombre = String(payload?.visitante || "").trim();
@@ -2318,8 +2347,19 @@ function api_guardarDecimoPartido(payload) {
   };
 }
 
-function api_quitarDecimoPartido(jornadaOpt) {
-  const jornada = Number(jornadaOpt) || Number(getConfig_("JornadaActual")) || 1;
+function api_quitarDecimoPartido(payload) {
+  // Check admin permission
+  const token = String(payload?.token || "").trim();
+  const player = findJugadorByToken_(token);
+  if (!player) {
+    return { ok: false, error: "Token inválido. Inicia sesión nuevamente." };
+  }
+  
+  if (!isPlayerAdminByName_(player.nombre)) {
+    return { ok: false, error: "Solo los administradores pueden eliminar el décimo partido." };
+  }
+  
+  const jornada = Number(payload?.jornada) || Number(getConfig_("JornadaActual")) || 1;
   
   const ss = SpreadsheetApp.getActive();
   const sh = ss.getSheetByName(SHEETS.DECIMO_PARTIDO);

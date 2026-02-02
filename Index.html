@@ -504,7 +504,7 @@
 
     <div style="margin-top:14px">
       <button class="secondary" onclick="openTabla()">📊 Ver tabla / transparencia</button>
-      <button class="secondary" style="margin-top:10px" onclick="openDecimoPartido()">🌍 Gestionar décimo partido</button>
+      <button id="adminButton" class="secondary" style="margin-top:10px;display:none" onclick="openDecimoPartido()">👤 Administrador</button>
     </div>
   </div>
 
@@ -565,7 +565,7 @@
 </div>
 
 <script>
-let SESSION = { token:null, jornada:null, lockMinutes:10, partidos:[] };
+let SESSION = { token:null, jornada:null, lockMinutes:10, partidos:[], isAdmin:false };
 
 // Constantes para validación de picks
 const VALID_PICK_VALUES = ["L", "E", "V"];
@@ -668,19 +668,48 @@ function bootstrap(){
             return;
           }
 
-          // Token válido - mostrar formulario
-          console.log("✅ Token valid, showing form");
-          document.getElementById("registerCard").style.display = "none";
-          document.getElementById("formCard").style.display = "block";
-          document.getElementById("jorTitle").innerHTML = `Jornada ${r.jornada}`;
+          // Token válido - verificar si es admin
+          console.log("✅ Token valid, checking admin status");
+          google.script.run
+            .withSuccessHandler(adminResult => {
+              console.log("🔐 Admin check result:", adminResult);
+              SESSION.isAdmin = adminResult?.isAdmin || false;
+              
+              // Mostrar/ocultar botón de administrador según permisos
+              const adminBtn = document.getElementById("adminButton");
+              if(adminBtn){
+                adminBtn.style.display = SESSION.isAdmin ? "block" : "none";
+              }
+              
+              // Mostrar formulario
+              console.log("✅ Showing form, isAdmin:", SESSION.isAdmin);
+              document.getElementById("registerCard").style.display = "none";
+              document.getElementById("formCard").style.display = "block";
+              document.getElementById("jorTitle").innerHTML = `Jornada ${r.jornada}`;
 
-          console.log("📝 Calling renderForm()");
-          renderForm();
-          console.log("📥 Calling loadMyPicks()");
-          loadMyPicks();
-          console.log("💰 Calling loadPrizePool()");
-          loadPrizePool();
-          console.log("✅ bootstrap() completed successfully");
+              console.log("📝 Calling renderForm()");
+              renderForm();
+              console.log("📥 Calling loadMyPicks()");
+              loadMyPicks();
+              console.log("💰 Calling loadPrizePool()");
+              loadPrizePool();
+              console.log("✅ bootstrap() completed successfully");
+            })
+            .withFailureHandler(err => {
+              console.error("❌ Admin check error:", err);
+              // Si falla el check de admin, continuar sin permisos
+              SESSION.isAdmin = false;
+              const adminBtn = document.getElementById("adminButton");
+              if(adminBtn) adminBtn.style.display = "none";
+              
+              document.getElementById("registerCard").style.display = "none";
+              document.getElementById("formCard").style.display = "block";
+              document.getElementById("jorTitle").innerHTML = `Jornada ${r.jornada}`;
+              renderForm();
+              loadMyPicks();
+              loadPrizePool();
+            })
+            .api_isPlayerAdmin(SESSION.token);
         })
         .withFailureHandler(err => {
           console.error("❌ Token validation error:", err);
@@ -1286,6 +1315,13 @@ window.loadPrizePoolInfo = loadPrizePoolInfo;
 /* ---------- DÉCIMO PARTIDO ---------- */
 function openDecimoPartido(){
   console.log("🌍 Opening décimo partido management");
+  
+  // Check admin permission
+  if(!SESSION.isAdmin){
+    alert("⛔ Solo los administradores pueden acceder a esta función.");
+    return;
+  }
+  
   document.getElementById("formCard").style.display = "none";
   document.getElementById("tablaCard").style.display = "none";
   document.getElementById("decimoCard").style.display = "block";
@@ -1396,7 +1432,8 @@ function guardarDecimoPartido(){
     local,
     visitante,
     fecha,
-    jornada: SESSION.jornada
+    jornada: SESSION.jornada,
+    token: SESSION.token
   };
   
   google.script.run.withSuccessHandler(r=>{
@@ -1426,6 +1463,11 @@ function quitarDecimoPartido(){
   
   msgBox.innerHTML = `<div class="small">Eliminando...</div>`;
   
+  const payload = {
+    jornada: SESSION.jornada,
+    token: SESSION.token
+  };
+  
   google.script.run.withSuccessHandler(r=>{
     if(r.ok){
       msgBox.innerHTML = `<div class="small ok">✅ ${esc(r.message||"Eliminado exitosamente")}</div>`;
@@ -1436,7 +1478,7 @@ function quitarDecimoPartido(){
   }).withFailureHandler(err => {
     console.error("❌ Error removing décimo:", err);
     msgBox.innerHTML = `<div class="small bad">⛔ Error: ${esc(err?.message||"intenta de nuevo")}</div>`;
-  }).api_quitarDecimoPartido(SESSION.jornada);
+  }).api_quitarDecimoPartido(payload);
 }
 
 /* ---------- AUTO ---------- */
