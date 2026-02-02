@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Demo - Control de Acceso Administrador</title>
+  <style>
+    :root{
+      --bg:#0f1220;
+      --card:#171a2f;
+      --line:#2a2e52;
+      --accent:#7c9cff;
+      --ok:#35d49a;
+      --bad:#ff6b6b;
+      --txt:#e9ecff;
+    }
+    body{
+      margin:0;
+      padding:20px;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:linear-gradient(180deg,#0c0f1d,#12152b);
+      color:var(--txt);
+      line-height:1.6;
+    }
+    .container{
+      max-width:600px;
+      margin:0 auto;
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      margin-bottom:14px;
+    }
+    .card.highlight{
+      border:2px solid var(--accent);
+      background:rgba(124,156,255,.05);
+    }
+    .card.success{
+      border:2px solid var(--ok);
+      background:rgba(53,212,154,.05);
+    }
+    .card.error{
+      border:2px solid var(--bad);
+      background:rgba(255,107,107,.05);
+    }
+    h1{
+      margin:0 0 20px 0;
+      font-size:28px;
+    }
+    h2{
+      margin:20px 0 10px 0;
+      font-size:22px;
+    }
+    h3{
+      margin:15px 0 8px 0;
+      font-size:18px;
+    }
+    .small{
+      opacity:.85;
+      font-size:14px;
+    }
+    button{
+      width:100%;
+      padding:12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#0c0f1d;
+      color:var(--txt);
+      font-size:16px;
+      box-sizing:border-box;
+      margin-top:8px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    button:disabled{
+      opacity:0.3;
+      cursor:not-allowed;
+    }
+    .comparison{
+      display:flex;
+      gap:14px;
+      margin:20px 0;
+    }
+    .comparison > div{
+      flex:1;
+    }
+    .badge{
+      background:#7c9cff;
+      color:#fff;
+      padding:4px 8px;
+      border-radius:6px;
+      font-size:12px;
+      font-weight:900;
+      display:inline-block;
+      margin-bottom:6px;
+    }
+    .badge.success{
+      background:var(--ok);
+    }
+    .badge.error{
+      background:var(--bad);
+    }
+    code{
+      background:#0c0f1d;
+      padding:2px 6px;
+      border-radius:4px;
+      font-size:13px;
+      color:var(--accent);
+    }
+    ul{
+      margin:8px 0;
+      padding-left:24px;
+    }
+    li{
+      margin:6px 0;
+    }
+    .step{
+      background:rgba(255,255,255,.03);
+      padding:10px 14px;
+      border-left:3px solid var(--accent);
+      margin:10px 0;
+      border-radius:0 8px 8px 0;
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin:10px 0;
+      font-size:13px;
+    }
+    th,td{
+      padding:8px;
+      text-align:left;
+      border:1px solid var(--line);
+    }
+    th{
+      background:rgba(124,156,255,.1);
+      font-weight:700;
+    }
+    @media (max-width: 650px) {
+      .comparison{
+        flex-direction:column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔐 Control de Acceso: Administrador</h1>
+    
+    <div class="card">
+      <h2>📋 Resumen del Cambio</h2>
+      <p class="small">
+        Se implementó un sistema de control de acceso para restringir la gestión del décimo partido 
+        solo a usuarios administradores autorizados.
+      </p>
+      <ul class="small">
+        <li><strong>Antes:</strong> Cualquier usuario podía modificar el décimo partido</li>
+        <li><strong>Ahora:</strong> Solo 2 personas específicas (admins) pueden hacerlo</li>
+        <li><strong>Botón:</strong> Cambiado de "🌍 Gestionar décimo partido" a "👤 Administrador"</li>
+      </ul>
+    </div>
+
+    <h2 style="margin-top:30px">🎨 Comparación Visual</h2>
+
+    <div class="comparison">
+      <div>
+        <div class="card error">
+          <div class="badge error">ANTES</div>
+          <h3 style="margin-top:8px">Usuario Regular</h3>
+          <button>📊 Ver tabla / transparencia</button>
+          <button>🌍 Gestionar décimo partido</button>
+          <div class="small" style="margin-top:10px;color:var(--bad)">
+            ❌ Botón visible para todos<br>
+            ❌ Sin control de acceso<br>
+            ❌ Cualquiera podía modificar
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card success">
+          <div class="badge success">AHORA</div>
+          <h3 style="margin-top:8px">Usuario Regular</h3>
+          <button>📊 Ver tabla / transparencia</button>
+          <button disabled>👤 Administrador</button>
+          <div class="small" style="margin-top:10px;color:var(--ok)">
+            ✅ Botón oculto automáticamente<br>
+            ✅ Sin acceso a funciones admin<br>
+            ✅ Solo ve sus picks
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="comparison">
+      <div>
+        <div class="card highlight">
+          <div class="badge">ADMINISTRADOR</div>
+          <h3 style="margin-top:8px">Vista Admin</h3>
+          <button>📊 Ver tabla / transparencia</button>
+          <button style="border:2px solid var(--accent)">👤 Administrador</button>
+          <div class="small" style="margin-top:10px;color:var(--ok)">
+            ✅ Botón visible y funcional<br>
+            ✅ Acceso completo<br>
+            ✅ Puede gestionar 10° partido
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>⚙️ Configuración en Google Sheets</h2>
+      <p class="small">En la hoja <strong>CONFIG</strong>, agregar:</p>
+      
+      <table>
+        <thead>
+          <tr>
+            <th>KEY</th>
+            <th>VALUE</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>AdminPlayers</code></td>
+            <td><code>Juan Pérez,María García</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="small" style="margin-top:10px;padding:10px;background:rgba(124,156,255,.1);border-radius:8px">
+        <strong>Importante:</strong>
+        <ul style="margin:5px 0">
+          <li>Los nombres deben coincidir con los de la hoja JUGADORES</li>
+          <li>Separar con comas (sin espacios extra)</li>
+          <li>No distingue mayúsculas/minúsculas</li>
+          <li>Solo 2 personas recomendadas</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🔒 Sistema de Validación</h2>
+      
+      <h3>1. Frontend (Index.html)</h3>
+      <div class="step">
+        <strong>Al cargar la página:</strong>
+        <ul class="small" style="margin:5px 0">
+          <li>Llama <code>api_isPlayerAdmin(token)</code></li>
+          <li>Si es admin: muestra botón "👤 Administrador"</li>
+          <li>Si NO es admin: oculta el botón</li>
+        </ul>
+      </div>
+
+      <div class="step">
+        <strong>Al hacer clic:</strong>
+        <ul class="small" style="margin:5px 0">
+          <li>Verifica <code>SESSION.isAdmin</code></li>
+          <li>Si NO es admin: muestra alerta y cancela</li>
+          <li>Si es admin: abre panel de gestión</li>
+        </ul>
+      </div>
+
+      <h3 style="margin-top:16px">2. Backend (Code.gs)</h3>
+      <div class="step">
+        <strong>Al guardar/eliminar:</strong>
+        <ul class="small" style="margin:5px 0">
+          <li>Valida token con <code>findJugadorByToken_()</code></li>
+          <li>Obtiene nombre del jugador</li>
+          <li>Verifica con <code>isPlayerAdminByName_()</code></li>
+          <li>Si NO es admin: retorna error</li>
+          <li>Si es admin: procesa la operación</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>💬 Mensajes de Error</h2>
+      
+      <div style="padding:12px;background:rgba(255,107,107,.1);border:2px solid var(--bad);border-radius:10px;margin:10px 0">
+        <strong style="color:var(--bad)">Para usuarios NO administradores:</strong>
+        <div class="small" style="margin-top:8px">
+          "⛔ Solo los administradores pueden acceder a esta función."
+        </div>
+      </div>
+
+      <div style="padding:12px;background:rgba(255,107,107,.1);border:2px solid var(--bad);border-radius:10px;margin:10px 0">
+        <strong style="color:var(--bad)">Al intentar guardar sin permisos:</strong>
+        <div class="small" style="margin-top:8px">
+          "Solo los administradores pueden configurar el décimo partido."
+        </div>
+      </div>
+
+      <div style="padding:12px;background:rgba(255,107,107,.1);border:2px solid var(--bad);border-radius:10px;margin:10px 0">
+        <strong style="color:var(--bad)">Al intentar eliminar sin permisos:</strong>
+        <div class="small" style="margin-top:8px">
+          "Solo los administradores pueden eliminar el décimo partido."
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🔄 Flujo de Autorización</h2>
+      
+      <div class="step">
+        <strong>1. Login</strong><br>
+        <span class="small">Usuario inicia sesión con su token</span>
+      </div>
+      
+      <div class="step">
+        <strong>2. Validación</strong><br>
+        <span class="small">Sistema valida token con <code>api_loginByToken()</code></span>
+      </div>
+      
+      <div class="step">
+        <strong>3. Check Admin</strong><br>
+        <span class="small">Sistema verifica con <code>api_isPlayerAdmin()</code></span>
+      </div>
+      
+      <div class="step">
+        <strong>4a. Si es Admin</strong><br>
+        <span class="small" style="color:var(--ok)">✅ Muestra botón "👤 Administrador"</span><br>
+        <span class="small" style="color:var(--ok)">✅ Permite gestionar décimo partido</span>
+      </div>
+      
+      <div class="step">
+        <strong>4b. Si NO es Admin</strong><br>
+        <span class="small" style="color:var(--bad)">❌ Oculta botón</span><br>
+        <span class="small" style="color:var(--bad)">❌ Bloquea acceso</span><br>
+        <span class="small" style="color:var(--bad)">❌ Muestra error si intenta acceder</span>
+      </div>
+    </div>
+
+    <div class="card highlight">
+      <h2>✅ Características de Seguridad</h2>
+      <ul>
+        <li><strong>Token-based:</strong> Todas las operaciones requieren token válido</li>
+        <li><strong>Server-side:</strong> Validaciones críticas en el backend (Code.gs)</li>
+        <li><strong>Name-based:</strong> Usa nombres de jugadores de JUGADORES</li>
+        <li><strong>Multi-capa:</strong> Frontend oculta UI + Backend valida permisos</li>
+        <li><strong>Clear feedback:</strong> Mensajes de error descriptivos</li>
+        <li><strong>Easy config:</strong> Un solo campo en CONFIG sheet</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>📊 Cambios Técnicos</h2>
+      
+      <h3>Code.gs</h3>
+      <ul class="small">
+        <li>➕ <code>api_isPlayerAdmin(token)</code> - Endpoint para verificar admin</li>
+        <li>➕ <code>isPlayerAdminByName_(playerName)</code> - Helper de validación</li>
+        <li>🔄 <code>api_guardarDecimoPartido()</code> - Ahora valida admin + token</li>
+        <li>🔄 <code>api_quitarDecimoPartido()</code> - Ahora valida admin + token</li>
+      </ul>
+
+      <h3 style="margin-top:12px">Index.html</h3>
+      <ul class="small">
+        <li>🔄 SESSION object - Agregado campo <code>isAdmin</code></li>
+        <li>🔄 Botón - Texto cambiado a "👤 Administrador"</li>
+        <li>🔄 Botón - ID agregado: <code>adminButton</code></li>
+        <li>🔄 Botón - Oculto por defecto (<code>display:none</code>)</li>
+        <li>➕ Admin check en bootstrap - Muestra/oculta botón</li>
+        <li>➕ Guard en <code>openDecimoPartido()</code> - Previene acceso</li>
+        <li>🔄 Funciones save/delete - Pasan token en payload</li>
+      </ul>
+    </div>
+
+    <div class="card success">
+      <h2>🎯 Resultado Final</h2>
+      <p><strong>Requisito 1: ✅ Completado</strong></p>
+      <p class="small">Solo 2 personas específicas pueden modificar el décimo partido (configurables en CONFIG)</p>
+      
+      <p style="margin-top:12px"><strong>Requisito 2: ✅ Completado</strong></p>
+      <p class="small">Botón cambiado de "Gestionar décimo partido" a "Administrador"</p>
+
+      <p style="margin-top:12px"><strong>Seguridad: ✅ Implementada</strong></p>
+      <p class="small">Sistema de validación en múltiples capas (frontend + backend)</p>
+
+      <p style="margin-top:12px"><strong>Experiencia: ✅ Mejorada</strong></p>
+      <p class="small">Usuarios regulares no ven opciones que no pueden usar</p>
+    </div>
+
+    <div style="margin-top:30px;padding:20px;background:rgba(124,156,255,.15);border-radius:12px;text-align:center">
+      <h2 style="margin-top:0;color:var(--accent)">🔐 Sistema de Administración Implementado</h2>
+      <p class="small">
+        Control de acceso robusto y fácil de configurar para la gestión del décimo partido
+      </p>
+    </div>
+  </div>
+</body>
+</html>

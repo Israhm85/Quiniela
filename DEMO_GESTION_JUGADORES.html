@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Demo - Gestión de Jugadores</title>
+  <style>
+    :root{
+      --bg:#0f1220;
+      --card:#171a2f;
+      --line:#2a2e52;
+      --accent:#7c9cff;
+      --ok:#35d49a;
+      --bad:#ff6b6b;
+      --txt:#e9ecff;
+    }
+    body{
+      margin:0;
+      padding:20px;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:linear-gradient(180deg,#0c0f1d,#12152b);
+      color:var(--txt);
+      line-height:1.6;
+    }
+    .container{
+      max-width:1000px;
+      margin:0 auto;
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:20px;
+      margin-bottom:20px;
+    }
+    h1{
+      margin:0 0 20px 0;
+      font-size:28px;
+    }
+    h2{
+      margin:20px 0 10px 0;
+      font-size:22px;
+    }
+    h3{
+      margin:15px 0 8px 0;
+      font-size:18px;
+    }
+    .small{
+      opacity:.85;
+      font-size:14px;
+    }
+    button{
+      padding:10px 16px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#0c0f1d;
+      color:var(--txt);
+      font-size:14px;
+      cursor:pointer;
+      font-weight:700;
+    }
+    button:hover{
+      background:rgba(124,156,255,.1);
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:14px;
+      margin:10px 0;
+    }
+    th{
+      background:rgba(124,156,255,.1);
+      padding:12px;
+      border:1px solid var(--line);
+      text-align:left;
+      font-weight:700;
+    }
+    td{
+      padding:10px;
+      border:1px solid var(--line);
+    }
+    tr:hover{
+      background:rgba(255,255,255,.02);
+    }
+    code{
+      background:rgba(124,156,255,.1);
+      padding:4px 8px;
+      border-radius:4px;
+      font-size:12px;
+      color:var(--accent);
+    }
+    .badge{
+      background:#7c9cff;
+      color:#fff;
+      padding:4px 8px;
+      border-radius:6px;
+      font-size:12px;
+      font-weight:900;
+      display:inline-block;
+    }
+    .badge.success{
+      background:var(--ok);
+    }
+    .badge.error{
+      background:var(--bad);
+    }
+    ul{
+      margin:8px 0;
+      padding-left:24px;
+    }
+    li{
+      margin:6px 0;
+    }
+    .feature-box{
+      background:rgba(138,43,226,.05);
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:14px;
+      margin:12px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>👥 Gestión de Jugadores</h1>
+    
+    <div class="card">
+      <h2>📋 Requisito Original</h2>
+      <p class="small">
+        "necesito que incorpores un nuevo boton en el formulario de administradores en donde me muestren todos los jugadores, su token y si esta pagado o no para poderlo modificar desde la web app"
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>✅ Solución Implementada</h2>
+      
+      <h3>Nueva Sección en Panel Admin</h3>
+      <div class="feature-box">
+        <h4 style="margin:0 0 10px 0">👥 Gestión de Jugadores</h4>
+        <button>Ver Jugadores y Estado de Pago</button>
+      </div>
+
+      <h3 style="margin-top:20px">Interfaz de Gestión</h3>
+      <div class="small" style="margin-bottom:12px">Total: 5 jugador(es)</div>
+      
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Token</th>
+              <th>Activo</th>
+              <th>Pagado</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td style="font-weight:700">Juan Pérez</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <code title="a1b2c3d4-e5f6-g7h8-i9j0">a1b2c3d4...</code>
+                  <button style="padding:4px 8px;font-size:11px">📋</button>
+                </div>
+              </td>
+              <td style="text-align:center">✅</td>
+              <td style="text-align:center">
+                <span style="color:var(--ok)">✅</span>
+              </td>
+              <td>
+                <button style="padding:6px 10px;font-size:12px;width:100%">Marcar No Pagado</button>
+              </td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td style="font-weight:700">María García</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <code title="b2c3d4e5-f6g7-h8i9-j0k1">b2c3d4e5...</code>
+                  <button style="padding:4px 8px;font-size:11px">📋</button>
+                </div>
+              </td>
+              <td style="text-align:center">✅</td>
+              <td style="text-align:center">
+                <span style="color:var(--bad)">❌</span>
+              </td>
+              <td>
+                <button style="padding:6px 10px;font-size:12px;width:100%">Marcar Pagado</button>
+              </td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td style="font-weight:700">Carlos Rodríguez</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <code title="c3d4e5f6-g7h8-i9j0-k1l2">c3d4e5f6...</code>
+                  <button style="padding:4px 8px;font-size:11px">📋</button>
+                </div>
+              </td>
+              <td style="text-align:center">✅</td>
+              <td style="text-align:center">
+                <span style="color:var(--ok)">✅</span>
+              </td>
+              <td>
+                <button style="padding:6px 10px;font-size:12px;width:100%">Marcar No Pagado</button>
+              </td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td style="font-weight:700">Ana Martínez</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <code title="d4e5f6g7-h8i9-j0k1-l2m3">d4e5f6g7...</code>
+                  <button style="padding:4px 8px;font-size:11px">📋</button>
+                </div>
+              </td>
+              <td style="text-align:center">✅</td>
+              <td style="text-align:center">
+                <span style="color:var(--bad)">❌</span>
+              </td>
+              <td>
+                <button style="padding:6px 10px;font-size:12px;width:100%">Marcar Pagado</button>
+              </td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td style="font-weight:700">Luis Fernández</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <code title="e5f6g7h8-i9j0-k1l2-m3n4">e5f6g7h8...</code>
+                  <button style="padding:4px 8px;font-size:11px">📋</button>
+                </div>
+              </td>
+              <td style="text-align:center">✅</td>
+              <td style="text-align:center">
+                <span style="color:var(--ok)">✅</span>
+              </td>
+              <td>
+                <button style="padding:6px 10px;font-size:12px;width:100%">Marcar No Pagado</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🚀 Características Implementadas</h2>
+      
+      <h3>👀 Visualización</h3>
+      <ul class="small">
+        <li><strong>ID:</strong> Identificador único del jugador</li>
+        <li><strong>Nombre:</strong> Nombre completo del jugador (en negrita)</li>
+        <li><strong>Token:</strong> Token de acceso truncado con botón de copiar</li>
+        <li><strong>Activo:</strong> Indicador visual ✅/❌</li>
+        <li><strong>Pagado:</strong> Estado de pago con color (verde ✅ / rojo ❌)</li>
+        <li><strong>Acción:</strong> Botón para cambiar estado de pago</li>
+      </ul>
+
+      <h3 style="margin-top:16px">🔧 Funcionalidades</h3>
+      <ul class="small">
+        <li><strong>Ver todos los jugadores:</strong> Lista completa en tabla responsive</li>
+        <li><strong>Copiar token:</strong> Botón 📋 para copiar al portapapeles</li>
+        <li><strong>Token truncado:</strong> Muestra primeros 8 caracteres + "..."</li>
+        <li><strong>Tooltip:</strong> Hover sobre token muestra token completo</li>
+        <li><strong>Toggle pago:</strong> Un click cambia estado SI ↔ NO</li>
+        <li><strong>Actualización inmediata:</strong> Cambios se guardan en Google Sheets</li>
+        <li><strong>Recarga automática:</strong> Lista se actualiza después de cambios</li>
+        <li><strong>Mensajes claros:</strong> Feedback de éxito/error</li>
+      </ul>
+
+      <h3 style="margin-top:16px">🔒 Seguridad</h3>
+      <ul class="small">
+        <li>✅ Autenticación admin requerida</li>
+        <li>✅ Validación de sesión en cada operación</li>
+        <li>✅ Solo admins pueden ver jugadores</li>
+        <li>✅ Solo admins pueden modificar estado de pago</li>
+        <li>✅ Tokens protegidos pero accesibles para admin</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>💡 Flujo de Uso</h2>
+      
+      <div style="padding:10px;background:rgba(124,156,255,.05);border-left:3px solid var(--accent);margin:10px 0;border-radius:0 8px 8px 0">
+        <strong>1. Acceso</strong><br>
+        <span class="small">Admin inicia sesión y abre panel de administrador</span>
+      </div>
+      
+      <div style="padding:10px;background:rgba(124,156,255,.05);border-left:3px solid var(--accent);margin:10px 0;border-radius:0 8px 8px 0">
+        <strong>2. Abrir Gestión</strong><br>
+        <span class="small">Click en "Ver Jugadores y Estado de Pago"</span>
+      </div>
+      
+      <div style="padding:10px;background:rgba(124,156,255,.05);border-left:3px solid var(--accent);margin:10px 0;border-radius:0 8px 8px 0">
+        <strong>3. Ver Lista</strong><br>
+        <span class="small">Tabla con todos los jugadores y su información</span>
+      </div>
+      
+      <div style="padding:10px;background:rgba(124,156,255,.05);border-left:3px solid var(--accent);margin:10px 0;border-radius:0 8px 8px 0">
+        <strong>4. Copiar Token</strong><br>
+        <span class="small">Click en 📋 para copiar token al portapapeles</span>
+      </div>
+      
+      <div style="padding:10px;background:rgba(124,156,255,.05);border-left:3px solid var(--accent);margin:10px 0;border-radius:0 8px 8px 0">
+        <strong>5. Cambiar Estado</strong><br>
+        <span class="small">Click en botón de acción para marcar como pagado/no pagado</span>
+      </div>
+      
+      <div style="padding:10px;background:rgba(124,156,255,.05);border-left:3px solid var(--accent);margin:10px 0;border-radius:0 8px 8px 0">
+        <strong>6. Confirmación</strong><br>
+        <span class="small">Mensaje de éxito y lista se actualiza automáticamente</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📊 Implementación Técnica</h2>
+      
+      <h3>Backend (Code.gs)</h3>
+      
+      <div style="background:#0c0f1d;padding:12px;border-radius:8px;margin:10px 0">
+        <code style="display:block;background:none;padding:0">
+// Obtener lista de jugadores<br>
+api_getJugadores(payload)<br>
+  → Valida admin session<br>
+  → Lee hoja JUGADORES<br>
+  → Retorna array con datos<br>
+<br>
+// Actualizar estado de pago<br>
+api_updatePagado(payload)<br>
+  → Valida admin session<br>
+  → Valida jugadorId<br>
+  → Actualiza columna PAGADO<br>
+  → Configura checkbox<br>
+  → Retorna confirmación
+        </code>
+      </div>
+
+      <h3 style="margin-top:16px">Frontend (Index.html)</h3>
+      
+      <div style="background:#0c0f1d;padding:12px;border-radius:8px;margin:10px 0">
+        <code style="display:block;background:none;padding:0">
+// Funciones JavaScript<br>
+openGestionJugadores() → Abre interfaz<br>
+loadJugadores() → Carga y muestra datos<br>
+copyToken(token) → Copia al portapapeles<br>
+togglePagado(id, status) → Actualiza estado<br>
+showJugadoresMsg(msg) → Muestra feedback
+        </code>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📱 Responsive Design</h2>
+      
+      <ul class="small">
+        <li>✅ <strong>Desktop:</strong> Tabla completa con todas las columnas</li>
+        <li>✅ <strong>Tablet:</strong> Scroll horizontal automático</li>
+        <li>✅ <strong>Mobile:</strong> Tabla scrolleable, botones táctiles</li>
+        <li>✅ <strong>Touch:</strong> Botones grandes y fáciles de presionar</li>
+        <li>✅ <strong>Accesibilidad:</strong> Tooltips y textos descriptivos</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>✨ Beneficios</h2>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
+        <div style="padding:12px;background:rgba(53,212,154,.05);border:1px solid var(--line);border-radius:10px">
+          <h4 style="margin:0 0 8px 0">Para Administradores</h4>
+          <ul class="small" style="margin:8px 0;padding-left:20px">
+            <li>Ver todos los jugadores</li>
+            <li>Acceder a tokens fácilmente</li>
+            <li>Gestionar pagos con un click</li>
+            <li>Sin abrir Google Sheets</li>
+          </ul>
+        </div>
+        
+        <div style="padding:12px;background:rgba(53,212,154,.05);border:1px solid var(--line);border-radius:10px">
+          <h4 style="margin:0 0 8px 0">Para el Sistema</h4>
+          <ul class="small" style="margin:8px 0;padding-left:20px">
+            <li>Datos centralizados</li>
+            <li>Actualizaciones inmediatas</li>
+            <li>Historial en Sheets</li>
+            <li>Interfaz segura</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:30px;padding:20px;background:rgba(138,43,226,.15);border-radius:12px;text-align:center">
+      <h2 style="margin-top:0;color:#ba68f0">👥 Gestión de Jugadores Completa</h2>
+      <p class="small">
+        Todo lo que necesitas para gestionar jugadores y pagos desde el panel admin
+      </p>
+      <div style="margin-top:16px">
+        <span class="badge success">IMPLEMENTADO</span>
+        <span class="badge success">FUNCIONAL</span>
+        <span class="badge success">SEGURO</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

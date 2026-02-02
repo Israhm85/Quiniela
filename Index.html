@@ -504,6 +504,152 @@
 
     <div style="margin-top:14px">
       <button class="secondary" onclick="openTabla()">📊 Ver tabla / transparencia</button>
+      <button id="adminButton" class="secondary" style="margin-top:10px;display:none" onclick="openAdminLogin()">🔐 Administrador</button>
+    </div>
+  </div>
+
+  <!-- ADMIN LOGIN -->
+  <div class="card" id="adminLoginCard" style="display:none">
+    <h2>🔐 Acceso de Administrador</h2>
+    <div class="small">Ingresa la contraseña de administrador para acceder al panel de control.</div>
+    
+    <div style="margin-top:14px">
+      <label class="small" style="display:block;margin-top:10px">Contraseña de Administrador:</label>
+      <input type="password" id="adminPassword" placeholder="Contraseña" style="width:100%">
+      
+      <button style="margin-top:14px" onclick="doAdminLogin()">🔓 Iniciar Sesión</button>
+      
+      <div id="adminLoginMsg" class="small" style="margin-top:8px"></div>
+    </div>
+    
+    <div style="margin-top:14px">
+      <button class="secondary" onclick="backToForm()">← Volver al formulario</button>
+    </div>
+  </div>
+
+  <!-- ADMIN PANEL -->
+  <div class="card" id="adminPanel" style="display:none">
+    <h2>⚙️ Panel de Administrador</h2>
+    <div class="small">Control completo de la quiniela</div>
+    
+    <!-- JORNADA MANAGEMENT -->
+    <div style="margin-top:14px;padding:12px;background:rgba(124,156,255,.05);border:1px solid var(--line);border-radius:10px">
+      <h3 style="margin:10px 0">📅 Gestión de Jornada</h3>
+      
+      <div id="jornadaInfoBox" style="margin:10px 0"></div>
+      
+      <label class="small" style="display:block;margin-top:10px">Cambiar Jornada Activa:</label>
+      <select id="adminJornadaSelect" style="width:100%">
+        <!-- Will be populated dynamically -->
+      </select>
+      
+      <button style="margin-top:10px" onclick="cambiarJornadaActiva()">📅 Cambiar Jornada</button>
+      
+      <div style="margin-top:10px">
+        <button class="secondary" onclick="cerrarJornada()">🔒 Cerrar Jornada</button>
+        <button class="secondary" style="margin-top:8px" onclick="abrirJornada()">🔓 Abrir Jornada</button>
+      </div>
+      
+      <div id="jornadaMsg" class="small" style="margin-top:8px"></div>
+    </div>
+    
+    <!-- CAPTURAR RESULTADOS REGULARES -->
+    <div style="margin-top:14px;padding:12px;background:rgba(53,212,154,.05);border:1px solid var(--line);border-radius:10px">
+      <h3 style="margin:10px 0">⚽ Capturar Resultados (Partidos Regulares)</h3>
+      
+      <div id="partidosRegularesBox"></div>
+      
+      <button style="margin-top:10px" onclick="capturarResultadosRegulares()">✅ Capturar Todos los Resultados</button>
+      
+      <div id="resultadosMsg" class="small" style="margin-top:8px"></div>
+    </div>
+    
+    <!-- DÉCIMO PARTIDO -->
+    <div style="margin-top:14px;padding:12px;background:rgba(255,193,7,.05);border:1px solid var(--line);border-radius:10px">
+      <h3 style="margin:10px 0">🌍 Décimo Partido</h3>
+      
+      <button class="secondary" onclick="openDecimoPartido()">Gestionar Décimo Partido</button>
+    </div>
+    
+    <!-- GESTIÓN DE JUGADORES -->
+    <div style="margin-top:14px;padding:12px;background:rgba(138,43,226,.05);border:1px solid var(--line);border-radius:10px">
+      <h3 style="margin:10px 0">👥 Gestión de Jugadores</h3>
+      
+      <button class="secondary" onclick="openGestionJugadores()">Ver Jugadores y Estado de Pago</button>
+    </div>
+    
+    <!-- ADMIN ACTIONS -->
+    <div style="margin-top:14px">
+      <button class="secondary" onclick="adminLogout()">🚪 Cerrar Sesión Admin</button>
+      <button class="secondary" style="margin-top:8px" onclick="backToForm()">← Volver al Formulario</button>
+    </div>
+  </div>
+
+  <!-- DÉCIMO PARTIDO -->
+  <div class="card" id="decimoCard" style="display:none">
+    <h2>🌍 Décimo Partido Opcional</h2>
+    <div class="small">Configura un partido extra de La Liga o Premier League para esta jornada.</div>
+    
+    <div id="decimoActualBox" style="margin-top:12px"></div>
+    
+    <!-- CAPTURAR RESULTADO -->
+    <div id="decimoResultadoBox" style="display:none;margin-top:14px">
+      <h3 style="margin:10px 0">⚽ Capturar Resultado</h3>
+      <div class="small" id="decimoPartidoInfo" style="margin-bottom:10px"></div>
+      
+      <label class="small" style="display:block;margin-top:10px">Marcador final (ejemplo: 2-1):</label>
+      <input type="text" id="decimoMarcador" placeholder="2-1" style="width:100%" pattern="[0-9]+-[0-9]+">
+      
+      <button style="margin-top:14px" onclick="capturarResultadoDecimo()">✅ Capturar Resultado</button>
+      
+      <div id="decimoResultadoMsg" class="small" style="margin-top:8px"></div>
+    </div>
+    
+    <div style="margin-top:14px">
+      <h3 style="margin:10px 0">Agregar/Modificar Décimo Partido</h3>
+      
+      <label class="small" style="display:block;margin-top:10px">Liga:</label>
+      <select id="decimoLiga" onchange="loadEquiposDecimo()">
+        <option value="">Seleccionar liga...</option>
+        <option value="LALIGA">🇪🇸 La Liga Española</option>
+        <option value="PREMIER">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
+      </select>
+      
+      <label class="small" style="display:block;margin-top:10px">Equipo Local:</label>
+      <select id="decimoLocal">
+        <option value="">Primero selecciona una liga</option>
+      </select>
+      
+      <label class="small" style="display:block;margin-top:10px">Equipo Visitante:</label>
+      <select id="decimoVisitante">
+        <option value="">Primero selecciona una liga</option>
+      </select>
+      
+      <label class="small" style="display:block;margin-top:10px">Fecha (opcional):</label>
+      <input type="datetime-local" id="decimoFecha" style="width:100%">
+      
+      <button style="margin-top:14px" onclick="guardarDecimoPartido()">💾 Guardar Décimo Partido</button>
+      <button class="secondary" style="margin-top:10px" onclick="quitarDecimoPartido()">🗑️ Eliminar Décimo Partido</button>
+    </div>
+    
+    <div id="decimoMsg" class="small" style="margin-top:8px"></div>
+    
+    <div style="margin-top:14px">
+      <button class="secondary" onclick="backToForm()">← Volver al formulario</button>
+    </div>
+  </div>
+
+  <!-- GESTIÓN DE JUGADORES -->
+  <div class="card" id="jugadoresCard" style="display:none">
+    <h2>👥 Gestión de Jugadores</h2>
+    <div class="small">Ver y gestionar el estado de pago de todos los jugadores</div>
+    
+    <div id="jugadoresListBox" style="margin-top:14px"></div>
+    
+    <div id="jugadoresMsg" class="small" style="margin-top:8px"></div>
+    
+    <div style="margin-top:14px">
+      <button class="secondary" onclick="backToAdminPanel()">← Volver al Panel Admin</button>
     </div>
   </div>
 
@@ -523,7 +669,7 @@
 </div>
 
 <script>
-let SESSION = { token:null, jornada:null, lockMinutes:10, partidos:[] };
+let SESSION = { token:null, jornada:null, lockMinutes:10, partidos:[], isAdmin:false, adminToken:null };
 
 // Constantes para validación de picks
 const VALID_PICK_VALUES = ["L", "E", "V"];
@@ -626,19 +772,48 @@ function bootstrap(){
             return;
           }
 
-          // Token válido - mostrar formulario
-          console.log("✅ Token valid, showing form");
-          document.getElementById("registerCard").style.display = "none";
-          document.getElementById("formCard").style.display = "block";
-          document.getElementById("jorTitle").innerHTML = `Jornada ${r.jornada}`;
+          // Token válido - verificar si es admin
+          console.log("✅ Token valid, checking admin status");
+          google.script.run
+            .withSuccessHandler(adminResult => {
+              console.log("🔐 Admin check result:", adminResult);
+              SESSION.isAdmin = adminResult?.isAdmin || false;
+              
+              // Mostrar/ocultar botón de administrador según permisos
+              const adminBtn = document.getElementById("adminButton");
+              if(adminBtn){
+                adminBtn.style.display = SESSION.isAdmin ? "block" : "none";
+              }
+              
+              // Mostrar formulario
+              console.log("✅ Showing form, isAdmin:", SESSION.isAdmin);
+              document.getElementById("registerCard").style.display = "none";
+              document.getElementById("formCard").style.display = "block";
+              document.getElementById("jorTitle").innerHTML = `Jornada ${r.jornada}`;
 
-          console.log("📝 Calling renderForm()");
-          renderForm();
-          console.log("📥 Calling loadMyPicks()");
-          loadMyPicks();
-          console.log("💰 Calling loadPrizePool()");
-          loadPrizePool();
-          console.log("✅ bootstrap() completed successfully");
+              console.log("📝 Calling renderForm()");
+              renderForm();
+              console.log("📥 Calling loadMyPicks()");
+              loadMyPicks();
+              console.log("💰 Calling loadPrizePoolInfo()");
+              loadPrizePoolInfo();
+              console.log("✅ bootstrap() completed successfully");
+            })
+            .withFailureHandler(err => {
+              console.error("❌ Admin check error:", err);
+              // Si falla el check de admin, continuar sin permisos
+              SESSION.isAdmin = false;
+              const adminBtn = document.getElementById("adminButton");
+              if(adminBtn) adminBtn.style.display = "none";
+              
+              document.getElementById("registerCard").style.display = "none";
+              document.getElementById("formCard").style.display = "block";
+              document.getElementById("jorTitle").innerHTML = `Jornada ${r.jornada}`;
+              renderForm();
+              loadMyPicks();
+              loadPrizePoolInfo();
+            })
+            .api_isPlayerAdmin(SESSION.token);
         })
         .withFailureHandler(err => {
           console.error("❌ Token validation error:", err);
@@ -1240,6 +1415,670 @@ window.loadTransparencia = loadTransparencia;
 window.generarPDF = generarPDF;
 window.handleCheckboxChange = handleCheckboxChange;
 window.loadPrizePoolInfo = loadPrizePoolInfo;
+
+/* ---------- DÉCIMO PARTIDO ---------- */
+function openDecimoPartido(){
+  console.log("🌍 Opening décimo partido management");
+  
+  // Check admin permission
+  if(!SESSION.isAdmin){
+    alert("⛔ Solo los administradores pueden acceder a esta función.");
+    return;
+  }
+  
+  document.getElementById("formCard").style.display = "none";
+  document.getElementById("tablaCard").style.display = "none";
+  document.getElementById("decimoCard").style.display = "block";
+  
+  loadDecimoActual();
+}
+
+function backToForm(){
+  // Hide all admin and management cards
+  document.getElementById("adminPanel").style.display = "none";
+  document.getElementById("adminLoginCard").style.display = "none";
+  document.getElementById("decimoCard").style.display = "none";
+  document.getElementById("jugadoresCard").style.display = "none";
+  document.getElementById("tablaCard").style.display = "none";
+  
+  // Show the main form
+  document.getElementById("formCard").style.display = "block";
+}
+
+function loadDecimoActual(){
+  const box = document.getElementById("decimoActualBox");
+  const resultadoBox = document.getElementById("decimoResultadoBox");
+  box.innerHTML = `<div class="small">Cargando...</div>`;
+  
+  google.script.run.withSuccessHandler(r=>{
+    if(!r.ok){
+      box.innerHTML = `<div class="small bad">Error: ${esc(r.error||"")}</div>`;
+      resultadoBox.style.display = "none";
+      return;
+    }
+    
+    if(r.decimo && r.decimo.local && r.decimo.visitante){
+      const liga = r.decimo.liga === "LALIGA" ? "🇪🇸 La Liga" : "🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League";
+      const fecha = r.decimo.fecha ? new Date(r.decimo.fecha).toLocaleString() : "Sin fecha";
+      box.innerHTML = `
+        <div style="padding:12px;background:rgba(124,156,255,.1);border:2px solid #7c9cff;border-radius:10px">
+          <div class="small" style="font-weight:800;color:#7c9cff;margin-bottom:8px">${liga}</div>
+          <div style="font-weight:700">${esc(r.decimo.local)} vs ${esc(r.decimo.visitante)}</div>
+          <div class="small" style="margin-top:4px">${fecha}</div>
+        </div>
+      `;
+      
+      // Show result capture section
+      resultadoBox.style.display = "block";
+      document.getElementById("decimoPartidoInfo").innerHTML = `
+        <strong>${esc(r.decimo.local)}</strong> vs <strong>${esc(r.decimo.visitante)}</strong>
+      `;
+      document.getElementById("decimoMarcador").value = "";
+      document.getElementById("decimoResultadoMsg").innerHTML = "";
+    } else {
+      box.innerHTML = `<div class="small" style="opacity:.7">No hay décimo partido configurado para esta jornada.</div>`;
+      resultadoBox.style.display = "none";
+    }
+  }).withFailureHandler(err => {
+    console.error("❌ Error loading décimo:", err);
+    box.innerHTML = `<div class="small bad">Error al cargar: ${esc(err?.message||"")}</div>`;
+    resultadoBox.style.display = "none";
+  }).api_getDecimoPartido(SESSION.jornada);
+}
+
+function loadEquiposDecimo(){
+  const liga = document.getElementById("decimoLiga").value;
+  const selectLocal = document.getElementById("decimoLocal");
+  const selectVisit = document.getElementById("decimoVisitante");
+  
+  if(!liga){
+    selectLocal.innerHTML = `<option value="">Primero selecciona una liga</option>`;
+    selectVisit.innerHTML = `<option value="">Primero selecciona una liga</option>`;
+    return;
+  }
+  
+  selectLocal.innerHTML = `<option value="">Cargando equipos...</option>`;
+  selectVisit.innerHTML = `<option value="">Cargando equipos...</option>`;
+  
+  google.script.run.withSuccessHandler(r=>{
+    if(!r.ok){
+      selectLocal.innerHTML = `<option value="">Error al cargar equipos</option>`;
+      selectVisit.innerHTML = `<option value="">Error al cargar equipos</option>`;
+      return;
+    }
+    
+    let html = `<option value="">Seleccionar equipo...</option>`;
+    r.equipos.forEach(eq => {
+      html += `<option value="${esc(eq.nombre)}">${esc(eq.nombre)}</option>`;
+    });
+    
+    selectLocal.innerHTML = html;
+    selectVisit.innerHTML = html;
+  }).withFailureHandler(err => {
+    console.error("❌ Error loading equipos:", err);
+    selectLocal.innerHTML = `<option value="">Error al cargar</option>`;
+    selectVisit.innerHTML = `<option value="">Error al cargar</option>`;
+  }).api_getEquiposPorLiga(liga);
+}
+
+function guardarDecimoPartido(){
+  const liga = document.getElementById("decimoLiga").value;
+  const local = document.getElementById("decimoLocal").value;
+  const visitante = document.getElementById("decimoVisitante").value;
+  const fechaInput = document.getElementById("decimoFecha").value;
+  const msgBox = document.getElementById("decimoMsg");
+  
+  if(!liga){
+    msgBox.innerHTML = `<div class="small bad">⚠️ Selecciona una liga</div>`;
+    return;
+  }
+  
+  if(!local || !visitante){
+    msgBox.innerHTML = `<div class="small bad">⚠️ Selecciona ambos equipos</div>`;
+    return;
+  }
+  
+  if(local === visitante){
+    msgBox.innerHTML = `<div class="small bad">⚠️ Los equipos deben ser diferentes</div>`;
+    return;
+  }
+  
+  msgBox.innerHTML = `<div class="small">Guardando...</div>`;
+  
+  let fecha = "";
+  if(fechaInput){
+    fecha = new Date(fechaInput).toISOString();
+  }
+  
+  const payload = {
+    liga,
+    local,
+    visitante,
+    fecha,
+    jornada: SESSION.jornada,
+    token: SESSION.token
+  };
+  
+  google.script.run.withSuccessHandler(r=>{
+    if(r.ok){
+      msgBox.innerHTML = `<div class="small ok">✅ ${esc(r.message||"Guardado exitosamente")}</div>`;
+      loadDecimoActual();
+      // Clear form
+      document.getElementById("decimoLiga").value = "";
+      document.getElementById("decimoLocal").innerHTML = `<option value="">Primero selecciona una liga</option>`;
+      document.getElementById("decimoVisitante").innerHTML = `<option value="">Primero selecciona una liga</option>`;
+      document.getElementById("decimoFecha").value = "";
+    } else {
+      msgBox.innerHTML = `<div class="small bad">⛔ ${esc(r.error||"Error al guardar")}</div>`;
+    }
+  }).withFailureHandler(err => {
+    console.error("❌ Error saving décimo:", err);
+    msgBox.innerHTML = `<div class="small bad">⛔ Error: ${esc(err?.message||"intenta de nuevo")}</div>`;
+  }).api_guardarDecimoPartido(payload);
+}
+
+function quitarDecimoPartido(){
+  const msgBox = document.getElementById("decimoMsg");
+  
+  if(!confirm("¿Estás seguro de eliminar el décimo partido de esta jornada?")){
+    return;
+  }
+  
+  msgBox.innerHTML = `<div class="small">Eliminando...</div>`;
+  
+  const payload = {
+    jornada: SESSION.jornada,
+    token: SESSION.token
+  };
+  
+  google.script.run.withSuccessHandler(r=>{
+    if(r.ok){
+      msgBox.innerHTML = `<div class="small ok">✅ ${esc(r.message||"Eliminado exitosamente")}</div>`;
+      loadDecimoActual();
+    } else {
+      msgBox.innerHTML = `<div class="small bad">⛔ ${esc(r.error||"Error al eliminar")}</div>`;
+    }
+  }).withFailureHandler(err => {
+    console.error("❌ Error removing décimo:", err);
+    msgBox.innerHTML = `<div class="small bad">⛔ Error: ${esc(err?.message||"intenta de nuevo")}</div>`;
+  }).api_quitarDecimoPartido(payload);
+}
+
+function capturarResultadoDecimo(){
+  const msgBox = document.getElementById("decimoResultadoMsg");
+  const marcador = document.getElementById("decimoMarcador").value.trim();
+  
+  if(!marcador){
+    msgBox.innerHTML = `<div class="small bad">⚠️ Ingresa el marcador</div>`;
+    return;
+  }
+  
+  // Validate format
+  if(!marcador.includes("-")){
+    msgBox.innerHTML = `<div class="small bad">⚠️ Formato inválido. Usa: 2-1</div>`;
+    return;
+  }
+  
+  const parts = marcador.split("-");
+  if(parts.length !== 2 || isNaN(Number(parts[0])) || isNaN(Number(parts[1]))){
+    msgBox.innerHTML = `<div class="small bad">⚠️ El marcador debe ser numérico (ejemplo: 2-1)</div>`;
+    return;
+  }
+  
+  msgBox.innerHTML = `<div class="small">Capturando resultado...</div>`;
+  
+  const payload = {
+    jornada: SESSION.jornada,
+    marcador: marcador,
+    token: SESSION.token
+  };
+  
+  google.script.run.withSuccessHandler(r=>{
+    if(r.ok){
+      msgBox.innerHTML = `<div class="small ok">✅ ${esc(r.message||"Resultado capturado exitosamente")}</div>`;
+      document.getElementById("decimoMarcador").value = "";
+      // Refresh the display
+      setTimeout(() => {
+        loadDecimoActual();
+      }, 2000);
+    } else {
+      msgBox.innerHTML = `<div class="small bad">⛔ ${esc(r.error||"Error al capturar resultado")}</div>`;
+    }
+  }).withFailureHandler(err => {
+    console.error("❌ Error capturing result:", err);
+    msgBox.innerHTML = `<div class="small bad">⛔ Error: ${esc(err?.message||"intenta de nuevo")}</div>`;
+  }).api_capturarMarcadorDecimoPartido(payload);
+}
+
+/* ---------- ADMIN FUNCTIONS ---------- */
+
+function openAdminLogin(){
+  console.log("🔐 Opening admin login");
+  document.getElementById("formCard").style.display = "none";
+  document.getElementById("tablaCard").style.display = "none";
+  document.getElementById("adminPanel").style.display = "none";
+  document.getElementById("decimoCard").style.display = "none";
+  document.getElementById("adminLoginCard").style.display = "block";
+  
+  document.getElementById("adminPassword").value = "";
+  document.getElementById("adminLoginMsg").innerHTML = "";
+}
+
+function doAdminLogin(){
+  const password = document.getElementById("adminPassword").value.trim();
+  const msgBox = document.getElementById("adminLoginMsg");
+  
+  if(!password){
+    msgBox.innerHTML = `<div class="small bad">⚠️ Ingresa la contraseña</div>`;
+    return;
+  }
+  
+  msgBox.innerHTML = `<div class="small">Verificando...</div>`;
+  
+  const payload = {
+    password: password,
+    token: SESSION.token
+  };
+  
+  google.script.run.withSuccessHandler(r=>{
+    if(r.ok){
+      SESSION.adminToken = r.adminToken;
+      msgBox.innerHTML = `<div class="small ok">✅ ${esc(r.message||"Sesión iniciada")}</div>`;
+      
+      // Show admin panel after short delay
+      setTimeout(() => {
+        openAdminPanel();
+      }, 1000);
+    } else {
+      msgBox.innerHTML = `<div class="small bad">⛔ ${esc(r.error||"Error al iniciar sesión")}</div>`;
+    }
+  }).withFailureHandler(err => {
+    console.error("❌ Error admin login:", err);
+    msgBox.innerHTML = `<div class="small bad">⛔ Error: ${esc(err?.message||"intenta de nuevo")}</div>`;
+  }).api_adminLogin(payload);
+}
+
+function openAdminPanel(){
+  console.log("⚙️ Opening admin panel");
+  document.getElementById("formCard").style.display = "none";
+  document.getElementById("tablaCard").style.display = "none";
+  document.getElementById("adminLoginCard").style.display = "none";
+  document.getElementById("decimoCard").style.display = "none";
+  document.getElementById("adminPanel").style.display = "block";
+  
+  loadJornadaInfo();
+  loadPartidosRegulares();
+  populateJornadaSelect();
+}
+
+function loadJornadaInfo(){
+  const box = document.getElementById("jornadaInfoBox");
+  box.innerHTML = `<div class="small">Cargando...</div>`;
+  
+  const payload = { adminToken: SESSION.adminToken };
+  
+  google.script.run.withSuccessHandler(r=>{
+    if(r.ok){
+      const estado = r.cerrada ? "🔒 CERRADA" : "🔓 ABIERTA";
+      const color = r.cerrada ? "var(--bad)" : "var(--ok)";
+      box.innerHTML = `
+        <div style="padding:10px;background:rgba(124,156,255,.1);border-radius:8px">
+          <div style="font-weight:700">Jornada Actual: ${r.jornada}</div>
+          <div class="small" style="color:${color};margin-top:4px">${estado}</div>
+        </div>
+      `;
+      SESSION.jornada = r.jornada;
+    } else {
+      box.innerHTML = `<div class="small bad">Error: ${esc(r.error||"")}</div>`;
+    }
+  }).withFailureHandler(err => {
+    console.error("❌ Error loading jornada info:", err);
+    box.innerHTML = `<div class="small bad">Error al cargar</div>`;
+  }).api_getInfoJornada(payload);
+}
+
+function populateJornadaSelect(){
+  const select = document.getElementById("adminJornadaSelect");
+  select.innerHTML = "";
+  
+  for(let i = 1; i <= 17; i++){
+    const option = document.createElement("option");
+    option.value = i;
+    option.textContent = `Jornada ${i}`;
+    if(i === SESSION.jornada){
+      option.selected = true;
+    }
+    select.appendChild(option);
+  }
+}
+
+function cambiarJornadaActiva(){
+  const nuevaJornada = Number(document.getElementById("adminJornadaSelect").value);
+  const msgBox = document.getElementById("jornadaMsg");
+  
+  if(!nuevaJornada){
+    msgBox.innerHTML = `<div class="small bad">⚠️ Selecciona una jornada</div>`;
+    return;
+  }
+  
+  msgBox.innerHTML = `<div class="small">Cambiando jornada...</div>`;
+  
+  const payload = {
+    adminToken: SESSION.adminToken,
+    jornada: nuevaJornada
+  };
+  
+  google.script.run.withSuccessHandler(r=>{
+    if(r.ok){
+      msgBox.innerHTML = `<div class="small ok">✅ ${esc(r.message||"Jornada cambiada")}</div>`;
+      loadJornadaInfo();
+      loadPartidosRegulares();
+    } else {
+      msgBox.innerHTML = `<div class="small bad">⛔ ${esc(r.error||"Error")}</div>`;
+    }
+  }).withFailureHandler(err => {
+    console.error("❌ Error changing jornada:", err);
+    msgBox.innerHTML = `<div class="small bad">⛔ Error: ${esc(err?.message||"intenta de nuevo")}</div>`;
+  }).api_cambiarJornada(payload);
+}
+
+function cerrarJornada(){
+  const msgBox = document.getElementById("jornadaMsg");
+  
+  if(!confirm("¿Cerrar la jornada actual? Esto bloqueará los picks.")){
+    return;
+  }
+  
+  msgBox.innerHTML = `<div class="small">Cerrando jornada...</div>`;
+  
+  const payload = {
+    adminToken: SESSION.adminToken,
+    jornada: SESSION.jornada
+  };
+  
+  google.script.run.withSuccessHandler(r=>{
+    if(r.ok){
+      msgBox.innerHTML = `<div class="small ok">✅ ${esc(r.message||"Jornada cerrada")}</div>`;
+      loadJornadaInfo();
+    } else {
+      msgBox.innerHTML = `<div class="small bad">⛔ ${esc(r.error||"Error")}</div>`;
+    }
+  }).withFailureHandler(err => {
+    console.error("❌ Error closing jornada:", err);
+    msgBox.innerHTML = `<div class="small bad">⛔ Error: ${esc(err?.message||"intenta de nuevo")}</div>`;
+  }).api_cerrarJornada(payload);
+}
+
+function abrirJornada(){
+  const msgBox = document.getElementById("jornadaMsg");
+  
+  if(!confirm("¿Abrir la jornada actual? Esto permitirá hacer picks.")){
+    return;
+  }
+  
+  msgBox.innerHTML = `<div class="small">Abriendo jornada...</div>`;
+  
+  const payload = {
+    adminToken: SESSION.adminToken,
+    jornada: SESSION.jornada
+  };
+  
+  google.script.run.withSuccessHandler(r=>{
+    if(r.ok){
+      msgBox.innerHTML = `<div class="small ok">✅ ${esc(r.message||"Jornada abierta")}</div>`;
+      loadJornadaInfo();
+    } else {
+      msgBox.innerHTML = `<div class="small bad">⛔ ${esc(r.error||"Error")}</div>`;
+    }
+  }).withFailureHandler(err => {
+    console.error("❌ Error opening jornada:", err);
+    msgBox.innerHTML = `<div class="small bad">⛔ Error: ${esc(err?.message||"intenta de nuevo")}</div>`;
+  }).api_abrirJornada(payload);
+}
+
+function loadPartidosRegulares(){
+  const box = document.getElementById("partidosRegularesBox");
+  box.innerHTML = `<div class="small">Cargando partidos...</div>`;
+  
+  const payload = {
+    adminToken: SESSION.adminToken,
+    jornada: SESSION.jornada
+  };
+  
+  google.script.run.withSuccessHandler(r=>{
+    if(r.ok){
+      if(!r.partidos || r.partidos.length === 0){
+        box.innerHTML = `<div class="small" style="opacity:.7">No hay partidos para esta jornada.</div>`;
+        return;
+      }
+      
+      let html = `<div class="small" style="margin-bottom:8px">Jornada ${r.jornada} - ${r.partidos.length} partidos</div>`;
+      
+      r.partidos.forEach((p, idx) => {
+        html += `
+          <div style="padding:8px;background:rgba(255,255,255,.02);border:1px solid var(--line);border-radius:8px;margin:6px 0">
+            <div class="small" style="font-weight:700">${esc(p.local)} vs ${esc(p.visitante)}</div>
+            <input type="text" 
+                   id="marcador_${idx}" 
+                   placeholder="2-1" 
+                   value="${esc(p.marcador)}"
+                   data-local="${esc(p.local)}"
+                   data-visitante="${esc(p.visitante)}"
+                   style="width:100%;margin-top:4px">
+          </div>
+        `;
+      });
+      
+      box.innerHTML = html;
+    } else {
+      box.innerHTML = `<div class="small bad">Error: ${esc(r.error||"")}</div>`;
+    }
+  }).withFailureHandler(err => {
+    console.error("❌ Error loading partidos:", err);
+    box.innerHTML = `<div class="small bad">Error al cargar partidos</div>`;
+  }).api_getPartidosParaResultados(payload);
+}
+
+function capturarResultadosRegulares(){
+  const msgBox = document.getElementById("resultadosMsg");
+  
+  // Collect all results
+  const resultados = [];
+  const inputs = document.querySelectorAll('[id^="marcador_"]');
+  
+  inputs.forEach(input => {
+    const marcador = input.value.trim();
+    if(marcador){
+      resultados.push({
+        local: input.getAttribute('data-local'),
+        visitante: input.getAttribute('data-visitante'),
+        marcador: marcador
+      });
+    }
+  });
+  
+  if(resultados.length === 0){
+    msgBox.innerHTML = `<div class="small bad">⚠️ No hay resultados para capturar</div>`;
+    return;
+  }
+  
+  msgBox.innerHTML = `<div class="small">Capturando ${resultados.length} resultado(s)...</div>`;
+  
+  const payload = {
+    adminToken: SESSION.adminToken,
+    jornada: SESSION.jornada,
+    resultados: resultados
+  };
+  
+  google.script.run.withSuccessHandler(r=>{
+    if(r.ok){
+      msgBox.innerHTML = `<div class="small ok">✅ ${esc(r.message||"Resultados capturados")}</div>`;
+      // Refresh the list
+      setTimeout(() => {
+        loadPartidosRegulares();
+      }, 2000);
+    } else {
+      msgBox.innerHTML = `<div class="small bad">⛔ ${esc(r.error||"Error")}</div>`;
+    }
+  }).withFailureHandler(err => {
+    console.error("❌ Error capturing results:", err);
+    msgBox.innerHTML = `<div class="small bad">⛔ Error: ${esc(err?.message||"intenta de nuevo")}</div>`;
+  }).api_capturarResultados(payload);
+}
+
+function adminLogout(){
+  if(SESSION.adminToken){
+    google.script.run.api_adminLogout(SESSION.adminToken);
+    SESSION.adminToken = null;
+  }
+  
+  backToForm();
+}
+
+/* ---------- GESTIÓN DE JUGADORES ---------- */
+
+function openGestionJugadores(){
+  console.log("👥 Opening player management");
+  document.getElementById("formCard").style.display = "none";
+  document.getElementById("tablaCard").style.display = "none";
+  document.getElementById("adminPanel").style.display = "none";
+  document.getElementById("adminLoginCard").style.display = "none";
+  document.getElementById("decimoCard").style.display = "none";
+  document.getElementById("jugadoresCard").style.display = "block";
+  
+  loadJugadores();
+}
+
+function backToAdminPanel(){
+  document.getElementById("formCard").style.display = "none";
+  document.getElementById("tablaCard").style.display = "none";
+  document.getElementById("adminLoginCard").style.display = "none";
+  document.getElementById("decimoCard").style.display = "none";
+  document.getElementById("jugadoresCard").style.display = "none";
+  document.getElementById("adminPanel").style.display = "block";
+}
+
+function loadJugadores(){
+  const box = document.getElementById("jugadoresListBox");
+  box.innerHTML = `<div class="small">Cargando jugadores...</div>`;
+  
+  const payload = { adminToken: SESSION.adminToken };
+  
+  google.script.run.withSuccessHandler(r=>{
+    if(r.ok){
+      if(!r.jugadores || r.jugadores.length === 0){
+        box.innerHTML = `<div class="small" style="opacity:.7">No hay jugadores registrados.</div>`;
+        return;
+      }
+      
+      let html = `<div class="small" style="margin-bottom:12px">Total: ${r.total} jugador(es)</div>`;
+      
+      html += `
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:14px">
+            <thead>
+              <tr style="background:rgba(124,156,255,.1);text-align:left">
+                <th style="padding:10px;border:1px solid var(--line)">ID</th>
+                <th style="padding:10px;border:1px solid var(--line)">Nombre</th>
+                <th style="padding:10px;border:1px solid var(--line)">Token</th>
+                <th style="padding:10px;border:1px solid var(--line)">Activo</th>
+                <th style="padding:10px;border:1px solid var(--line)">Pagado</th>
+                <th style="padding:10px;border:1px solid var(--line)">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+      
+      r.jugadores.forEach((j) => {
+        const activoIcon = j.activo ? "✅" : "❌";
+        const pagadoIcon = j.pagado ? "✅" : "❌";
+        const pagadoColor = j.pagado ? "var(--ok)" : "var(--bad)";
+        const buttonText = j.pagado ? "Marcar No Pagado" : "Marcar Pagado";
+        const shortToken = j.token.substring(0, 8) + "...";
+        
+        html += `
+          <tr style="border-bottom:1px solid var(--line)">
+            <td style="padding:10px;border:1px solid var(--line)">${j.id}</td>
+            <td style="padding:10px;border:1px solid var(--line);font-weight:700">${esc(j.nombre)}</td>
+            <td style="padding:10px;border:1px solid var(--line)">
+              <div style="display:flex;align-items:center;gap:6px">
+                <code style="font-size:12px;background:rgba(124,156,255,.1);padding:4px 8px;border-radius:4px" title="${esc(j.token)}">${esc(shortToken)}</code>
+                <button class="secondary" style="padding:4px 8px;font-size:11px" onclick="copyToken('${esc(j.token)}')">📋</button>
+              </div>
+            </td>
+            <td style="padding:10px;border:1px solid var(--line);text-align:center">${activoIcon}</td>
+            <td style="padding:10px;border:1px solid var(--line);text-align:center">
+              <span style="color:${pagadoColor}">${pagadoIcon}</span>
+            </td>
+            <td style="padding:10px;border:1px solid var(--line)">
+              <button class="secondary" style="padding:6px 10px;font-size:12px;width:100%" onclick="togglePagado(${j.id}, ${!j.pagado})">${buttonText}</button>
+            </td>
+          </tr>
+        `;
+      });
+      
+      html += `
+            </tbody>
+          </table>
+        </div>
+      `;
+      
+      box.innerHTML = html;
+    } else {
+      box.innerHTML = `<div class="small bad">Error: ${esc(r.error||"")}</div>`;
+    }
+  }).withFailureHandler(err => {
+    console.error("❌ Error loading jugadores:", err);
+    box.innerHTML = `<div class="small bad">Error al cargar jugadores</div>`;
+  }).api_getJugadores(payload);
+}
+
+function copyToken(token){
+  // Try to copy to clipboard
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(token).then(() => {
+      showJugadoresMsg("Token copiado al portapapeles", true);
+    }).catch(() => {
+      // Fallback: show in alert
+      prompt("Token del jugador (Ctrl+C para copiar):", token);
+    });
+  } else {
+    // Fallback for older browsers
+    prompt("Token del jugador (Ctrl+C para copiar):", token);
+  }
+}
+
+function togglePagado(jugadorId, newPagado){
+  const msgBox = document.getElementById("jugadoresMsg");
+  msgBox.innerHTML = `<div class="small">Actualizando...</div>`;
+  
+  const payload = {
+    adminToken: SESSION.adminToken,
+    jugadorId: jugadorId,
+    pagado: newPagado
+  };
+  
+  google.script.run.withSuccessHandler(r=>{
+    if(r.ok){
+      showJugadoresMsg(r.message || "Estado actualizado", true);
+      // Reload the list
+      setTimeout(() => {
+        loadJugadores();
+      }, 1000);
+    } else {
+      showJugadoresMsg(r.error || "Error al actualizar", false);
+    }
+  }).withFailureHandler(err => {
+    console.error("❌ Error updating pagado:", err);
+    showJugadoresMsg("Error: " + (err?.message || "intenta de nuevo"), false);
+  }).api_updatePagado(payload);
+}
+
+function showJugadoresMsg(msg, isSuccess){
+  const msgBox = document.getElementById("jugadoresMsg");
+  const cls = isSuccess ? "ok" : "bad";
+  msgBox.innerHTML = `<div class="small ${cls}">${isSuccess ? "✅" : "⛔"} ${esc(msg)}</div>`;
+}
 
 /* ---------- AUTO ---------- */
 window.onload = bootstrap;

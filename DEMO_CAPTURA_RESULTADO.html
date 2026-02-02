@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Demo - Captura de Resultado del Décimo Partido</title>
+  <style>
+    :root{
+      --bg:#0f1220;
+      --card:#171a2f;
+      --line:#2a2e52;
+      --accent:#7c9cff;
+      --ok:#35d49a;
+      --bad:#ff6b6b;
+      --txt:#e9ecff;
+    }
+    body{
+      margin:0;
+      padding:20px;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:linear-gradient(180deg,#0c0f1d,#12152b);
+      color:var(--txt);
+      line-height:1.6;
+    }
+    .container{
+      max-width:600px;
+      margin:0 auto;
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      margin-bottom:14px;
+    }
+    .card.highlight{
+      border:2px solid var(--accent);
+      background:rgba(124,156,255,.05);
+    }
+    .card.success{
+      border:2px solid var(--ok);
+      background:rgba(53,212,154,.05);
+    }
+    h1{
+      margin:0 0 20px 0;
+      font-size:28px;
+    }
+    h2{
+      margin:20px 0 10px 0;
+      font-size:22px;
+    }
+    h3{
+      margin:15px 0 8px 0;
+      font-size:18px;
+    }
+    .small{
+      opacity:.85;
+      font-size:14px;
+    }
+    input,button{
+      width:100%;
+      padding:12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#0c0f1d;
+      color:var(--txt);
+      font-size:16px;
+      box-sizing:border-box;
+      margin-top:8px;
+    }
+    button{
+      background:linear-gradient(180deg,#6f8cff,#5a74ff);
+      border:none;
+      font-weight:800;
+      cursor:pointer;
+    }
+    button.secondary{
+      background:#0c0f1d;
+      border:1px solid var(--line);
+      font-weight:700;
+    }
+    .badge{
+      background:#7c9cff;
+      color:#fff;
+      padding:4px 8px;
+      border-radius:6px;
+      font-size:12px;
+      font-weight:900;
+      display:inline-block;
+      margin-bottom:6px;
+    }
+    .badge.success{
+      background:var(--ok);
+    }
+    code{
+      background:#0c0f1d;
+      padding:2px 6px;
+      border-radius:4px;
+      font-size:13px;
+      color:var(--accent);
+    }
+    ul{
+      margin:8px 0;
+      padding-left:24px;
+    }
+    li{
+      margin:6px 0;
+    }
+    .step{
+      background:rgba(255,255,255,.03);
+      padding:10px 14px;
+      border-left:3px solid var(--accent);
+      margin:10px 0;
+      border-radius:0 8px 8px 0;
+    }
+    .decimo-box{
+      padding:12px;
+      background:rgba(124,156,255,.1);
+      border:2px solid #7c9cff;
+      border-radius:10px;
+      margin:10px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>⚽ Captura de Resultado: Décimo Partido</h1>
+    
+    <div class="card">
+      <h2>📋 Nueva Funcionalidad</h2>
+      <p class="small">
+        Ahora puedes capturar el resultado del décimo partido directamente desde la web app,
+        sin necesidad de abrir Google Sheets.
+      </p>
+      <ul class="small">
+        <li><strong>Antes:</strong> Abrir Google Sheets → Menú → Capturar marcador</li>
+        <li><strong>Ahora:</strong> Web UI → Admin → Capturar resultado ✅</li>
+      </ul>
+    </div>
+
+    <h2 style="margin-top:30px">🎨 Interfaz de Captura</h2>
+
+    <div class="card highlight">
+      <div class="badge">ADMIN PANEL</div>
+      <h3 style="margin-top:8px">🌍 Décimo Partido Opcional</h3>
+      <div class="small">Configura un partido extra de La Liga o Premier League para esta jornada.</div>
+      
+      <div class="decimo-box" style="margin-top:12px">
+        <div class="small" style="font-weight:800;color:#7c9cff;margin-bottom:8px">🇪🇸 LA LIGA</div>
+        <div style="font-weight:700">Real Madrid vs Barcelona</div>
+        <div class="small" style="margin-top:4px">26 ene 2026, 15:00</div>
+      </div>
+
+      <!-- NUEVA SECCIÓN -->
+      <div style="margin-top:14px;padding:12px;background:rgba(53,212,154,.05);border:1px solid var(--ok);border-radius:10px">
+        <h3 style="margin:10px 0">⚽ Capturar Resultado</h3>
+        <div class="small" style="margin-bottom:10px">
+          <strong>Real Madrid</strong> vs <strong>Barcelona</strong>
+        </div>
+        
+        <label class="small" style="display:block;margin-top:10px">Marcador final (ejemplo: 2-1):</label>
+        <input type="text" placeholder="2-1" value="3-1" style="width:100%">
+        
+        <button style="margin-top:14px">✅ Capturar Resultado</button>
+        
+        <div class="small" style="margin-top:8px;color:var(--ok)">
+          ✅ Resultado capturado: Real Madrid 3-1 Barcelona. Resultado: L. Puntos recalculados.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🔄 Flujo de Uso</h2>
+      
+      <div class="step">
+        <strong>1.</strong> Admin abre la web app desde móvil o desktop
+      </div>
+      
+      <div class="step">
+        <strong>2.</strong> Hace clic en "👤 Administrador"
+      </div>
+      
+      <div class="step">
+        <strong>3.</strong> Ve el décimo partido configurado automáticamente
+      </div>
+      
+      <div class="step">
+        <strong>4.</strong> Ve la sección "⚽ Capturar Resultado"
+      </div>
+      
+      <div class="step">
+        <strong>5.</strong> Ingresa el marcador (ejemplo: 3-1)
+      </div>
+      
+      <div class="step">
+        <strong>6.</strong> Hace clic en "✅ Capturar Resultado"
+      </div>
+      
+      <div class="step">
+        <strong>7.</strong> Sistema automáticamente:
+        <ul class="small" style="margin:5px 0">
+          <li>Valida el formato del marcador</li>
+          <li>Calcula el resultado (L/E/V)</li>
+          <li>Actualiza la hoja PARTIDOS</li>
+          <li>Recalcula los puntos de todos los jugadores</li>
+          <li>Actualiza la tabla general</li>
+        </ul>
+      </div>
+      
+      <div class="step">
+        <strong>8.</strong> Muestra mensaje de confirmación
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>✅ Validaciones Implementadas</h2>
+      <ul>
+        <li><strong>Admin-only:</strong> Solo administradores pueden capturar</li>
+        <li><strong>Formato:</strong> Debe ser "X-Y" (ejemplo: 2-1)</li>
+        <li><strong>Numérico:</strong> Ambos valores deben ser números</li>
+        <li><strong>Existencia:</strong> Debe haber un 10° partido configurado</li>
+        <li><strong>Token:</strong> Sesión válida requerida</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>📱 Ventajas</h2>
+      <ul>
+        <li>✅ <strong>Mobile-first:</strong> Funciona perfecto en celular</li>
+        <li>✅ <strong>Sin Google Sheets:</strong> Todo desde la web app</li>
+        <li>✅ <strong>Inmediato:</strong> Feedback instantáneo</li>
+        <li>✅ <strong>Automático:</strong> Recalcula puntos automáticamente</li>
+        <li>✅ <strong>Integrado:</strong> Misma interfaz que configuración</li>
+        <li>✅ <strong>Seguro:</strong> Validación multi-capa</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>💬 Mensajes de Error</h2>
+      
+      <div style="padding:12px;background:rgba(255,107,107,.1);border:1px solid var(--bad);border-radius:10px;margin:10px 0">
+        <div class="small" style="color:var(--bad)">
+          ⚠️ Formato inválido. Usa: 2-1
+        </div>
+      </div>
+
+      <div style="padding:12px;background:rgba(255,107,107,.1);border:1px solid var(--bad);border-radius:10px;margin:10px 0">
+        <div class="small" style="color:var(--bad)">
+          ⚠️ El marcador debe ser numérico (ejemplo: 2-1)
+        </div>
+      </div>
+
+      <div style="padding:12px;background:rgba(255,107,107,.1);border:1px solid var(--bad);border-radius:10px;margin:10px 0">
+        <div class="small" style="color:var(--bad)">
+          Solo los administradores pueden capturar el resultado del décimo partido.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🔧 Implementación Técnica</h2>
+      
+      <h3>Backend (Code.gs)</h3>
+      <div class="small">
+        <strong>Nuevo endpoint:</strong> <code>api_capturarMarcadorDecimoPartido(payload)</code>
+      </div>
+      <ul class="small">
+        <li>Valida token y permisos de admin</li>
+        <li>Valida formato del marcador</li>
+        <li>Busca/actualiza partido en PARTIDOS</li>
+        <li>Calcula resultado (L/E/V)</li>
+        <li>Ejecuta <code>calcularPuntosParaJornada_()</code></li>
+        <li>Ejecuta <code>actualizarTablaGeneral()</code></li>
+      </ul>
+
+      <h3 style="margin-top:12px">Frontend (Index.html)</h3>
+      <ul class="small">
+        <li>Nueva sección "⚽ Capturar Resultado"</li>
+        <li>Se muestra solo si hay 10° partido configurado</li>
+        <li>Input con validación cliente-side</li>
+        <li>Función <code>capturarResultadoDecimo()</code></li>
+        <li>Mensajes de éxito/error claros</li>
+        <li>Auto-refresh después de capturar</li>
+      </ul>
+    </div>
+
+    <div class="card success">
+      <h2>🎯 Resultado</h2>
+      <p><strong>Pregunta original:</strong></p>
+      <p class="small">"¿y para introducir el resultado del 10 partido? es ahi mismo?"</p>
+      
+      <p style="margin-top:12px"><strong>Respuesta:</strong></p>
+      <p class="small" style="color:var(--ok)">
+        ✅ <strong>¡Sí, ahí mismo!</strong> Ahora puedes capturar el resultado del décimo partido 
+        directamente en el panel de administrador, en la misma pantalla donde lo configuras.
+      </p>
+
+      <p style="margin-top:12px"><strong>Características:</strong></p>
+      <ul class="small">
+        <li>📱 Desde móvil o desktop</li>
+        <li>⚡ Sin abrir Google Sheets</li>
+        <li>✅ Validación automática</li>
+        <li>🔄 Recalcula puntos al instante</li>
+        <li>💬 Feedback inmediato</li>
+      </ul>
+    </div>
+
+    <div style="margin-top:30px;padding:20px;background:rgba(124,156,255,.15);border-radius:12px;text-align:center">
+      <h2 style="margin-top:0;color:var(--accent)">⚽ Captura de Resultado Implementada</h2>
+      <p class="small">
+        Todo lo que necesitas para gestionar el décimo partido está ahora en un solo lugar
+      </p>
+    </div>
+  </div>
+</body>
+</html>
