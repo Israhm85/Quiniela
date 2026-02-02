@@ -571,6 +571,13 @@
       <button class="secondary" onclick="openDecimoPartido()">Gestionar Décimo Partido</button>
     </div>
     
+    <!-- GESTIÓN DE JUGADORES -->
+    <div style="margin-top:14px;padding:12px;background:rgba(138,43,226,.05);border:1px solid var(--line);border-radius:10px">
+      <h3 style="margin:10px 0">👥 Gestión de Jugadores</h3>
+      
+      <button class="secondary" onclick="openGestionJugadores()">Ver Jugadores y Estado de Pago</button>
+    </div>
+    
     <!-- ADMIN ACTIONS -->
     <div style="margin-top:14px">
       <button class="secondary" onclick="adminLogout()">🚪 Cerrar Sesión Admin</button>
@@ -629,6 +636,20 @@
     
     <div style="margin-top:14px">
       <button class="secondary" onclick="backToForm()">← Volver al formulario</button>
+    </div>
+  </div>
+
+  <!-- GESTIÓN DE JUGADORES -->
+  <div class="card" id="jugadoresCard" style="display:none">
+    <h2>👥 Gestión de Jugadores</h2>
+    <div class="small">Ver y gestionar el estado de pago de todos los jugadores</div>
+    
+    <div id="jugadoresListBox" style="margin-top:14px"></div>
+    
+    <div id="jugadoresMsg" class="small" style="margin-top:8px"></div>
+    
+    <div style="margin-top:14px">
+      <button class="secondary" onclick="backToAdminPanel()">← Volver al Panel Admin</button>
     </div>
   </div>
 
@@ -1905,6 +1926,151 @@ function adminLogout(){
   }
   
   backToForm();
+}
+
+/* ---------- GESTIÓN DE JUGADORES ---------- */
+
+function openGestionJugadores(){
+  console.log("👥 Opening player management");
+  document.getElementById("formCard").style.display = "none";
+  document.getElementById("tablaCard").style.display = "none";
+  document.getElementById("adminPanel").style.display = "none";
+  document.getElementById("adminLoginCard").style.display = "none";
+  document.getElementById("decimoCard").style.display = "none";
+  document.getElementById("jugadoresCard").style.display = "block";
+  
+  loadJugadores();
+}
+
+function backToAdminPanel(){
+  document.getElementById("formCard").style.display = "none";
+  document.getElementById("tablaCard").style.display = "none";
+  document.getElementById("adminLoginCard").style.display = "none";
+  document.getElementById("decimoCard").style.display = "none";
+  document.getElementById("jugadoresCard").style.display = "none";
+  document.getElementById("adminPanel").style.display = "block";
+}
+
+function loadJugadores(){
+  const box = document.getElementById("jugadoresListBox");
+  box.innerHTML = `<div class="small">Cargando jugadores...</div>`;
+  
+  const payload = { adminToken: SESSION.adminToken };
+  
+  google.script.run.withSuccessHandler(r=>{
+    if(r.ok){
+      if(!r.jugadores || r.jugadores.length === 0){
+        box.innerHTML = `<div class="small" style="opacity:.7">No hay jugadores registrados.</div>`;
+        return;
+      }
+      
+      let html = `<div class="small" style="margin-bottom:12px">Total: ${r.total} jugador(es)</div>`;
+      
+      html += `
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:14px">
+            <thead>
+              <tr style="background:rgba(124,156,255,.1);text-align:left">
+                <th style="padding:10px;border:1px solid var(--line)">ID</th>
+                <th style="padding:10px;border:1px solid var(--line)">Nombre</th>
+                <th style="padding:10px;border:1px solid var(--line)">Token</th>
+                <th style="padding:10px;border:1px solid var(--line)">Activo</th>
+                <th style="padding:10px;border:1px solid var(--line)">Pagado</th>
+                <th style="padding:10px;border:1px solid var(--line)">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+      
+      r.jugadores.forEach((j) => {
+        const activoIcon = j.activo ? "✅" : "❌";
+        const pagadoIcon = j.pagado ? "✅" : "❌";
+        const pagadoColor = j.pagado ? "var(--ok)" : "var(--bad)";
+        const buttonText = j.pagado ? "Marcar No Pagado" : "Marcar Pagado";
+        const shortToken = j.token.substring(0, 8) + "...";
+        
+        html += `
+          <tr style="border-bottom:1px solid var(--line)">
+            <td style="padding:10px;border:1px solid var(--line)">${j.id}</td>
+            <td style="padding:10px;border:1px solid var(--line);font-weight:700">${esc(j.nombre)}</td>
+            <td style="padding:10px;border:1px solid var(--line)">
+              <div style="display:flex;align-items:center;gap:6px">
+                <code style="font-size:12px;background:rgba(124,156,255,.1);padding:4px 8px;border-radius:4px" title="${esc(j.token)}">${esc(shortToken)}</code>
+                <button class="secondary" style="padding:4px 8px;font-size:11px" onclick="copyToken('${esc(j.token)}')">📋</button>
+              </div>
+            </td>
+            <td style="padding:10px;border:1px solid var(--line);text-align:center">${activoIcon}</td>
+            <td style="padding:10px;border:1px solid var(--line);text-align:center">
+              <span style="color:${pagadoColor}">${pagadoIcon}</span>
+            </td>
+            <td style="padding:10px;border:1px solid var(--line)">
+              <button class="secondary" style="padding:6px 10px;font-size:12px;width:100%" onclick="togglePagado(${j.id}, ${!j.pagado})">${buttonText}</button>
+            </td>
+          </tr>
+        `;
+      });
+      
+      html += `
+            </tbody>
+          </table>
+        </div>
+      `;
+      
+      box.innerHTML = html;
+    } else {
+      box.innerHTML = `<div class="small bad">Error: ${esc(r.error||"")}</div>`;
+    }
+  }).withFailureHandler(err => {
+    console.error("❌ Error loading jugadores:", err);
+    box.innerHTML = `<div class="small bad">Error al cargar jugadores</div>`;
+  }).api_getJugadores(payload);
+}
+
+function copyToken(token){
+  // Try to copy to clipboard
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(token).then(() => {
+      showJugadoresMsg("Token copiado al portapapeles", true);
+    }).catch(() => {
+      // Fallback: show in alert
+      prompt("Token del jugador (Ctrl+C para copiar):", token);
+    });
+  } else {
+    // Fallback for older browsers
+    prompt("Token del jugador (Ctrl+C para copiar):", token);
+  }
+}
+
+function togglePagado(jugadorId, newPagado){
+  const msgBox = document.getElementById("jugadoresMsg");
+  msgBox.innerHTML = `<div class="small">Actualizando...</div>`;
+  
+  const payload = {
+    adminToken: SESSION.adminToken,
+    jugadorId: jugadorId,
+    pagado: newPagado
+  };
+  
+  google.script.run.withSuccessHandler(r=>{
+    if(r.ok){
+      showJugadoresMsg(r.message || "Estado actualizado", true);
+      // Reload the list
+      setTimeout(() => {
+        loadJugadores();
+      }, 1000);
+    } else {
+      showJugadoresMsg(r.error || "Error al actualizar", false);
+    }
+  }).withFailureHandler(err => {
+    console.error("❌ Error updating pagado:", err);
+    showJugadoresMsg("Error: " + (err?.message || "intenta de nuevo"), false);
+  }).api_updatePagado(payload);
+}
+
+function showJugadoresMsg(msg, isSuccess){
+  const msgBox = document.getElementById("jugadoresMsg");
+  const cls = isSuccess ? "ok" : "bad";
+  msgBox.innerHTML = `<div class="small ${cls}">${isSuccess ? "✅" : "⛔"} ${esc(msg)}</div>`;
 }
 
 /* ---------- AUTO ---------- */

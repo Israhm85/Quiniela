@@ -2532,6 +2532,95 @@ function api_capturarResultados(payload) {
 }
 
 /***************
+ * API: GESTIÓN DE JUGADORES
+ ***************/
+
+function api_getJugadores(payload) {
+  const validation = validateAdminSession_(payload?.adminToken);
+  if (!validation.ok) return validation;
+  
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEETS.JUGADORES);
+  
+  if (!sh) {
+    return { ok: false, error: "Hoja JUGADORES no encontrada." };
+  }
+  
+  const lr = sh.getLastRow();
+  if (lr < 2) {
+    return { ok: true, jugadores: [] };
+  }
+  
+  const data = sh.getRange(2, 1, lr - 1, 6).getValues();
+  const jugadores = [];
+  
+  for (const row of data) {
+    jugadores.push({
+      id: Number(row[0]) || 0,
+      nombre: String(row[1] || ""),
+      token: String(row[2] || ""),
+      activo: String(row[3] || "").toUpperCase() === "SI",
+      pagado: String(row[4] || "").toUpperCase() === "SI" || row[4] === true,
+      fechaReg: row[5] ? new Date(row[5]).toISOString() : null
+    });
+  }
+  
+  return {
+    ok: true,
+    jugadores: jugadores,
+    total: jugadores.length
+  };
+}
+
+function api_updatePagado(payload) {
+  const validation = validateAdminSession_(payload?.adminToken);
+  if (!validation.ok) return validation;
+  
+  const jugadorId = Number(payload?.jugadorId);
+  const pagado = payload?.pagado === true || String(payload?.pagado).toUpperCase() === "SI";
+  
+  if (!jugadorId) {
+    return { ok: false, error: "ID de jugador requerido." };
+  }
+  
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEETS.JUGADORES);
+  
+  if (!sh) {
+    return { ok: false, error: "Hoja JUGADORES no encontrada." };
+  }
+  
+  const lr = sh.getLastRow();
+  if (lr < 2) {
+    return { ok: false, error: "No hay jugadores registrados." };
+  }
+  
+  const data = sh.getRange(2, 1, lr - 1, 6).getValues();
+  
+  for (let i = 0; i < data.length; i++) {
+    if (Number(data[i][0]) === jugadorId) {
+      const rowNum = i + 2;
+      const pagadoValue = pagado ? "SI" : "NO";
+      
+      sh.getRange(rowNum, 5).setValue(pagadoValue); // Column PAGADO
+      
+      // Ensure checkbox is set up
+      setupCheckboxForPagado_(sh, rowNum);
+      
+      return {
+        ok: true,
+        jugadorId: jugadorId,
+        nombre: String(data[i][1] || ""),
+        pagado: pagado,
+        message: `Estado de pago actualizado: ${pagado ? "PAGADO" : "NO PAGADO"}`
+      };
+    }
+  }
+  
+  return { ok: false, error: "Jugador no encontrado." };
+}
+
+/***************
  * API: DÉCIMO PARTIDO
  ***************/
 function api_getDecimoPartido(jornadaOpt) {
