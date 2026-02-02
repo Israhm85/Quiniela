@@ -9,17 +9,52 @@ Este error ocurre porque Google Apps Script necesita permisos explícitos para c
 
 ## Descripción
 
-Función que genera automáticamente un archivo PDF con todos los participantes y sus selecciones ("picks") para una jornada específica. Esta funcionalidad facilita la creación de reportes claros y organizados para las jornadas completadas.
+Función que genera automáticamente un archivo PDF con todos los participantes y sus selecciones ("picks") para una jornada específica en formato de **tabla matriz**, similar a la vista de transparencia en la web app.
+
+## Formato del PDF
+
+### Vista de Tabla Matriz (Nuevo)
+
+El PDF ahora muestra una **sola tabla matriz** con:
+- **Filas:** Un participante por fila (ordenados por puntos)
+- **Columnas:** Un partido por columna
+- **Celdas:** Los picks de cada participante para cada partido
+- **Colores:** Verde para aciertos, gris/blanco alternado para facilitar lectura
+
+**Ejemplo visual:**
+```
++------------------+--------+--------+--------+--------+
+| Participante     | TIG vs | AME vs | CHI vs | ...    |
+| (Pts)            | MTY    | CRU    | PUE    |        |
++------------------+--------+--------+--------+--------+
+| Juan (1) ✓       | ✓ L    | ✓ V    | E      | ...    |
+| (25 pts)         | Verde  | Verde  | Blanco |        |
++------------------+--------+--------+--------+--------+
+| María (2) ⚠      | L      | ✓ V    | ✓ L    | ...    |
+| (22 pts)         | Blanco | Verde  | Verde  |        |
++------------------+--------+--------+--------+--------+
+```
+
+**Leyenda:**
+- ✓ = Acierto (pick correcto, fondo verde)
+- ⚠ = No pagado
+- — = Sin pronóstico
 
 ## Características
 
+✅ **Formato de tabla matriz**: Vista consolidada similar a "ver todos los picks" en la web  
 ✅ **Verificación de estado**: Verifica si la jornada está cerrada (solo para jornada actual)  
 ✅ **Incluye todos los partidos**: Partidos de Liga MX + décimo partido opcional  
-✅ **Información completa**: Muestra picks, marcadores pronosticados y puntos obtenidos  
+✅ **Vista comparativa**: Fácil comparación entre participantes en una sola tabla  
 ✅ **Ordenamiento inteligente**: Participantes ordenados por puntos totales  
-✅ **Indicador de pago**: Muestra ✓ para jugadores que pagaron, ⚠ para los que no  
+✅ **Indicadores visuales**:
+  - ✓ Checkmark para aciertos (con fondo verde)
+  - ✓ Para jugadores que pagaron
+  - ⚠ Para jugadores que no pagaron
+  - — Para picks no realizados
 ✅ **Múltiples entries**: Soporta sistema 2x1 (Entry 1 y Entry 2)  
-✅ **Formato profesional**: Tablas bien organizadas y fáciles de leer  
+✅ **Colores alternados**: Filas con fondos alternados para mejor legibilidad  
+✅ **Formato compacto**: Cabe en menos páginas que el formato anterior  
 ✅ **Almacenamiento automático**: PDF guardado en Google Drive  
 
 ## Cómo Usar
@@ -61,23 +96,43 @@ Logger.log("PDF generado: " + pdfUrl);
 - Título: "QUINIELA LIGA MX - JORNADA X"
 - Fecha y hora de generación
 
-### 2. Tabla de Partidos
-Muestra todos los partidos de la jornada con:
-- Número de partido
-- Equipo local
-- Equipo visitante
-- Marcador (si está disponible)
-- Resultado (L/E/V)
+### 2. Tabla Matriz de Participantes y Picks
 
-### 3. Pronósticos por Participante
-Para cada participante, muestra:
-- Nombre del participante
-- Indicador de pago (✓ o ⚠)
-- Entry (si tiene más de uno)
-- Puntos totales obtenidos
-- Tabla detallada con:
-  - Equipos del partido
-  - Pick seleccionado (L/E/V)
+**Formato de una sola tabla con:**
+
+**Encabezado (Primera fila):**
+- Primera columna: "Participante (Pts)"
+- Columnas siguientes: Cada partido "Local vs Visitante"
+
+**Filas de datos:**
+- Una fila por participante (ordenado por puntos, de mayor a menor)
+- Primera celda: Nombre (Entry) [Estado de pago] (Puntos totales)
+- Celdas de picks: Muestra L/E/V con ✓ si acertó
+
+**Colores y formato:**
+- Encabezado: Fondo azul (#4a86e8)
+- Aciertos: Fondo verde (#d9ead3) + ✓ checkmark
+- Filas alternadas: Blanco y gris claro para facilitar lectura
+- Negrita en encabezados y nombres de participantes
+
+**Ejemplo:**
+```
++------------------+----------+----------+----------+
+| Participante     | TIG vs   | AME vs   | CHI vs   |
+| (Pts)            | MTY      | CRU      | PUE      |
++------------------+----------+----------+----------+
+| Juan (1) ✓       | ✓ L      | ✓ V      | E        |
+| (25 pts)         | [Verde]  | [Verde]  | [Blanco] |
++------------------+----------+----------+----------+
+| María (2) ⚠      | L        | ✓ V      | ✓ L      |
+| (22 pts)         | [Blanco] | [Verde]  | [Verde]  |
++------------------+----------+----------+----------+
+```
+
+### 3. Nota Explicativa
+
+Al final del documento:
+- Leyenda de símbolos: ✓ = Acierto (fondo verde) | ⚠ = No pagado | — = Sin pronóstico
   - Marcador pronosticado
   - Puntos obtenidos (resaltado en verde si ganó puntos)
 
