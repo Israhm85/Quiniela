@@ -1168,7 +1168,7 @@ function getPartidosWebPorJornada_(jornada, lockMinutes) {
       locked, 
       reason,
       logoLocal: decimoPartido.logoLocal,
-      logoVisit: decimoPartido.logoVisit,
+      logoVisit: decimoPartido.logoVisitante,
       esDecimoPartido: true, // ✅ Marcador para identificarlo
       liga: decimoPartido.liga,
     });
