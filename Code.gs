@@ -2956,19 +2956,26 @@ function generarPDFJornadaInterno_(jornada) {
   const doc = DocumentApp.create(docName);
   const body = doc.getBody();
   
-  // 5.1 Configurar página para landscape y márgenes mínimos (para una sola página)
+  // 5.1 Configurar página para landscape y márgenes ULTRA mínimos (para UNA SOLA página)
   body.setPageWidth(792);  // 11 pulgadas en puntos (landscape)
   body.setPageHeight(612); // 8.5 pulgadas en puntos (landscape)
-  body.setMarginTop(36);    // 0.5 pulgadas
-  body.setMarginBottom(36);
-  body.setMarginLeft(36);
-  body.setMarginRight(36);
+  body.setMarginTop(20);    // 0.28 pulgadas (mínimo posible)
+  body.setMarginBottom(20);
+  body.setMarginLeft(20);
+  body.setMarginRight(20);
   
-  // 6. Agregar título compacto
-  const titulo = body.appendParagraph(`QUINIELA J${jornada} - ${new Date().toLocaleDateString()}`);
-  titulo.setHeading(DocumentApp.ParagraphHeading.HEADING2);
+  // Establecer fuente pequeña para todo el documento
+  const defaultStyle = {};
+  defaultStyle[DocumentApp.Attribute.FONT_SIZE] = 8;
+  body.setAttributes(defaultStyle);
+  
+  // 6. Agregar título ultra compacto
+  const titulo = body.appendParagraph(`J${jornada}`);
+  titulo.setBold(true);
   titulo.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-  titulo.setSpacingAfter(3);
+  titulo.setSpacingAfter(0);
+  titulo.setSpacingBefore(0);
+  titulo.setFontSize(10);
   
   // 7. Crear tabla matriz con todos los participantes y sus picks
   if (participantes.size === 0) {
@@ -2988,19 +2995,22 @@ function generarPDFJornadaInterno_(jornada) {
     // FILA DE ENCABEZADO: Participante + cada partido
     const headerRow = tablaMatriz.appendTableRow();
     
-    // Primera celda: Participante (compacta)
+    // Primera celda: Participante (ultra compacta)
     const cellParticipante = headerRow.appendTableCell("Participante");
     cellParticipante.setBackgroundColor("#4a86e8");
     const parPara = cellParticipante.getChild(0).asParagraph();
     parPara.setBold(true);
     parPara.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-    parPara.setSpacingBefore(1);
-    parPara.setSpacingAfter(1);
-    cellParticipante.setWidth(85);
-    cellParticipante.setPaddingTop(2);
-    cellParticipante.setPaddingBottom(2);
+    parPara.setSpacingBefore(0);
+    parPara.setSpacingAfter(0);
+    parPara.setFontSize(7);
+    cellParticipante.setWidth(65);
+    cellParticipante.setPaddingTop(1);
+    cellParticipante.setPaddingBottom(1);
+    cellParticipante.setPaddingLeft(1);
+    cellParticipante.setPaddingRight(1);
     
-    // Celdas de encabezado para cada partido (compactas, sin saltos de línea)
+    // Celdas de encabezado para cada partido (ultra compactas)
     partidos.forEach(p => {
       const matchText = `${p.local}-${p.visitante}`;
       const cellMatch = headerRow.appendTableCell(matchText);
@@ -3008,18 +3018,21 @@ function generarPDFJornadaInterno_(jornada) {
       const matchPara = cellMatch.getChild(0).asParagraph();
       matchPara.setBold(true);
       matchPara.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-      matchPara.setSpacingBefore(1);
-      matchPara.setSpacingAfter(1);
-      cellMatch.setWidth(45);
-      cellMatch.setPaddingTop(2);
-      cellMatch.setPaddingBottom(2);
+      matchPara.setSpacingBefore(0);
+      matchPara.setSpacingAfter(0);
+      matchPara.setFontSize(6);
+      cellMatch.setWidth(35);
+      cellMatch.setPaddingTop(1);
+      cellMatch.setPaddingBottom(1);
+      cellMatch.setPaddingLeft(1);
+      cellMatch.setPaddingRight(1);
     });
     
     // FILAS DE PARTICIPANTES
     participantesOrdenados.forEach((part, idx) => {
       const filaParticipante = tablaMatriz.appendTableRow();
       
-      // Primera celda: Nombre del participante con puntos totales (compacto)
+      // Primera celda: Nombre del participante con puntos totales (ultra compacto)
       const nombreCompleto = part.entry > 1 
         ? `${part.nombre}(${part.entry})` 
         : part.nombre;
@@ -3028,7 +3041,7 @@ function generarPDFJornadaInterno_(jornada) {
       const estadoPago = jugadorInfo?.pagado ? "✓" : "⚠";
       
       const cellNombre = filaParticipante.appendTableCell(
-        `${nombreCompleto} ${estadoPago} (${part.puntosTotal})`
+        `${nombreCompleto}${estadoPago}(${part.puntosTotal})`
       );
       
       // Fondo alternado para facilitar lectura
@@ -3036,10 +3049,13 @@ function generarPDFJornadaInterno_(jornada) {
       cellNombre.setBackgroundColor(bgColor);
       const nombrePara = cellNombre.getChild(0).asParagraph();
       nombrePara.setBold(true);
-      nombrePara.setSpacingBefore(1);
-      nombrePara.setSpacingAfter(1);
-      cellNombre.setPaddingTop(2);
-      cellNombre.setPaddingBottom(2);
+      nombrePara.setSpacingBefore(0);
+      nombrePara.setSpacingAfter(0);
+      nombrePara.setFontSize(7);
+      cellNombre.setPaddingTop(1);
+      cellNombre.setPaddingBottom(1);
+      cellNombre.setPaddingLeft(1);
+      cellNombre.setPaddingRight(1);
       
       // Crear mapa de picks del participante para búsqueda rápida
       const picksMap = new Map();
@@ -3048,7 +3064,7 @@ function generarPDFJornadaInterno_(jornada) {
         picksMap.set(key, pick);
       });
       
-      // Celdas para cada partido (compactas)
+      // Celdas para cada partido (ultra compactas)
       partidos.forEach(partido => {
         const key = `${partido.local}|||${partido.visitante}`;
         const pick = picksMap.get(key);
@@ -3062,10 +3078,13 @@ function generarPDFJornadaInterno_(jornada) {
           const pickPara = cellPick.getChild(0).asParagraph();
           pickPara.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
           pickPara.setBold(true);
-          pickPara.setSpacingBefore(1);
-          pickPara.setSpacingAfter(1);
-          cellPick.setPaddingTop(2);
-          cellPick.setPaddingBottom(2);
+          pickPara.setSpacingBefore(0);
+          pickPara.setSpacingAfter(0);
+          pickPara.setFontSize(7);
+          cellPick.setPaddingTop(1);
+          cellPick.setPaddingBottom(1);
+          cellPick.setPaddingLeft(1);
+          cellPick.setPaddingRight(1);
           
           // Color de fondo: verde si acertó, blanco/gris si no
           if (acerto) {
@@ -3078,22 +3097,26 @@ function generarPDFJornadaInterno_(jornada) {
           const cellEmpty = filaParticipante.appendTableCell("—");
           const emptyPara = cellEmpty.getChild(0).asParagraph();
           emptyPara.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
-          emptyPara.setSpacingBefore(1);
-          emptyPara.setSpacingAfter(1);
-          cellEmpty.setPaddingTop(2);
-          cellEmpty.setPaddingBottom(2);
+          emptyPara.setSpacingBefore(0);
+          emptyPara.setSpacingAfter(0);
+          emptyPara.setFontSize(7);
+          cellEmpty.setPaddingTop(1);
+          cellEmpty.setPaddingBottom(1);
+          cellEmpty.setPaddingLeft(1);
+          cellEmpty.setPaddingRight(1);
           cellEmpty.setBackgroundColor(bgColor);
         }
       });
     });
     
-    // Agregar nota explicativa compacta
+    // Agregar nota explicativa ultra compacta
     const nota = body.appendParagraph(
-      "✓=Acierto | ⚠=No pagado | —=Sin pronóstico"
+      "✓=Acierto|⚠=No pagado"
     );
     nota.setItalic(true);
-    nota.setFontSize(7);
-    nota.setSpacingBefore(3);
+    nota.setFontSize(6);
+    nota.setSpacingBefore(0);
+    nota.setSpacingAfter(0);
   }
   
   // 9. Guardar y cerrar documento
