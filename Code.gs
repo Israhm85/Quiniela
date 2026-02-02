@@ -2244,6 +2244,113 @@ function api_generarPDFJornada(jornadaOpt) {
   }
 }
 
+/***************
+ * API: DÉCIMO PARTIDO
+ ***************/
+function api_getDecimoPartido(jornadaOpt) {
+  const jornada = Number(jornadaOpt) || Number(getConfig_("JornadaActual")) || 1;
+  const decimo = getDecimoPartidoPorJornada_(jornada);
+  
+  return {
+    ok: true,
+    jornada,
+    decimo: decimo || null
+  };
+}
+
+function api_getEquiposPorLiga(liga) {
+  liga = String(liga || "").toUpperCase().trim();
+  
+  if (liga === "LALIGA") {
+    return { ok: true, liga: "LALIGA", equipos: getEquiposLaLiga_() };
+  } else if (liga === "PREMIER") {
+    return { ok: true, liga: "PREMIER", equipos: getEquiposPremierLeague_() };
+  } else {
+    return { ok: false, error: "Liga inválida. Usa 'LALIGA' o 'PREMIER'." };
+  }
+}
+
+function api_guardarDecimoPartido(payload) {
+  const liga = String(payload?.liga || "").toUpperCase().trim();
+  const localNombre = String(payload?.local || "").trim();
+  const visitNombre = String(payload?.visitante || "").trim();
+  const fechaStr = String(payload?.fecha || "").trim();
+  const jornada = Number(payload?.jornada) || Number(getConfig_("JornadaActual")) || 1;
+  
+  if (!liga || !["LALIGA", "PREMIER"].includes(liga)) {
+    return { ok: false, error: "Liga inválida. Usa 'LALIGA' o 'PREMIER'." };
+  }
+  
+  if (!localNombre || !visitNombre) {
+    return { ok: false, error: "Faltan nombres de equipos." };
+  }
+  
+  if (normalizeTeam_(localNombre) === normalizeTeam_(visitNombre)) {
+    return { ok: false, error: "Los equipos deben ser diferentes." };
+  }
+  
+  const equipos = liga === "LALIGA" ? getEquiposLaLiga_() : getEquiposPremierLeague_();
+  const localEquipo = equipos.find(e => normalizeTeam_(e.nombre) === normalizeTeam_(localNombre));
+  const visitEquipo = equipos.find(e => normalizeTeam_(e.nombre) === normalizeTeam_(visitNombre));
+  
+  if (!localEquipo) {
+    return { ok: false, error: `No se encontró el equipo "${localNombre}" en ${liga}.` };
+  }
+  
+  if (!visitEquipo) {
+    return { ok: false, error: `No se encontró el equipo "${visitNombre}" en ${liga}.` };
+  }
+  
+  let fechaObj = null;
+  if (fechaStr) {
+    fechaObj = new Date(fechaStr);
+    if (isNaN(fechaObj.getTime())) {
+      fechaObj = null;
+    }
+  }
+  
+  guardarDecimoPartido_(jornada, liga, localEquipo.nombre, visitEquipo.nombre, fechaObj, localEquipo.logo, visitEquipo.logo);
+  
+  return {
+    ok: true,
+    jornada,
+    message: `Décimo partido configurado: ${localEquipo.nombre} vs ${visitEquipo.nombre}`
+  };
+}
+
+function api_quitarDecimoPartido(jornadaOpt) {
+  const jornada = Number(jornadaOpt) || Number(getConfig_("JornadaActual")) || 1;
+  
+  const ss = SpreadsheetApp.getActive();
+  const sh = ss.getSheetByName(SHEETS.DECIMO_PARTIDO);
+  
+  if (!sh) {
+    return { ok: false, error: "No existe la hoja de décimo partido." };
+  }
+  
+  const lr = sh.getLastRow();
+  if (lr < 2) {
+    return { ok: false, error: "No hay décimo partido configurado." };
+  }
+  
+  const data = sh.getRange(2, 1, lr - 1, 7).getValues();
+  let removed = false;
+  
+  for (let i = 0; i < data.length; i++) {
+    if (Number(data[i][0]) === Number(jornada)) {
+      sh.deleteRow(i + 2);
+      removed = true;
+      break;
+    }
+  }
+  
+  if (removed) {
+    return { ok: true, jornada, message: `Décimo partido eliminado para jornada ${jornada}.` };
+  } else {
+    return { ok: false, error: `No había décimo partido configurado para jornada ${jornada}.` };
+  }
+}
+
 function getLigaMxLogoUrl_(teamName) {
   const nameNorm = normalizeTeam_(teamName);
   if (!nameNorm) return "";

@@ -504,6 +504,48 @@
 
     <div style="margin-top:14px">
       <button class="secondary" onclick="openTabla()">📊 Ver tabla / transparencia</button>
+      <button class="secondary" style="margin-top:10px" onclick="openDecimoPartido()">🌍 Gestionar décimo partido</button>
+    </div>
+  </div>
+
+  <!-- DÉCIMO PARTIDO -->
+  <div class="card" id="decimoCard" style="display:none">
+    <h2>🌍 Décimo Partido Opcional</h2>
+    <div class="small">Configura un partido extra de La Liga o Premier League para esta jornada.</div>
+    
+    <div id="decimoActualBox" style="margin-top:12px"></div>
+    
+    <div style="margin-top:14px">
+      <h3 style="margin:10px 0">Agregar/Modificar Décimo Partido</h3>
+      
+      <label class="small" style="display:block;margin-top:10px">Liga:</label>
+      <select id="decimoLiga" onchange="loadEquiposDecimo()">
+        <option value="">Seleccionar liga...</option>
+        <option value="LALIGA">🇪🇸 La Liga Española</option>
+        <option value="PREMIER">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League</option>
+      </select>
+      
+      <label class="small" style="display:block;margin-top:10px">Equipo Local:</label>
+      <select id="decimoLocal">
+        <option value="">Primero selecciona una liga</option>
+      </select>
+      
+      <label class="small" style="display:block;margin-top:10px">Equipo Visitante:</label>
+      <select id="decimoVisitante">
+        <option value="">Primero selecciona una liga</option>
+      </select>
+      
+      <label class="small" style="display:block;margin-top:10px">Fecha (opcional):</label>
+      <input type="datetime-local" id="decimoFecha" style="width:100%">
+      
+      <button style="margin-top:14px" onclick="guardarDecimoPartido()">💾 Guardar Décimo Partido</button>
+      <button class="secondary" style="margin-top:10px" onclick="quitarDecimoPartido()">🗑️ Eliminar Décimo Partido</button>
+    </div>
+    
+    <div id="decimoMsg" class="small" style="margin-top:8px"></div>
+    
+    <div style="margin-top:14px">
+      <button class="secondary" onclick="backToForm()">← Volver al formulario</button>
     </div>
   </div>
 
@@ -1240,6 +1282,162 @@ window.loadTransparencia = loadTransparencia;
 window.generarPDF = generarPDF;
 window.handleCheckboxChange = handleCheckboxChange;
 window.loadPrizePoolInfo = loadPrizePoolInfo;
+
+/* ---------- DÉCIMO PARTIDO ---------- */
+function openDecimoPartido(){
+  console.log("🌍 Opening décimo partido management");
+  document.getElementById("formCard").style.display = "none";
+  document.getElementById("tablaCard").style.display = "none";
+  document.getElementById("decimoCard").style.display = "block";
+  
+  loadDecimoActual();
+}
+
+function backToForm(){
+  document.getElementById("decimoCard").style.display = "none";
+  document.getElementById("formCard").style.display = "block";
+}
+
+function loadDecimoActual(){
+  const box = document.getElementById("decimoActualBox");
+  box.innerHTML = `<div class="small">Cargando...</div>`;
+  
+  google.script.run.withSuccessHandler(r=>{
+    if(!r.ok){
+      box.innerHTML = `<div class="small bad">Error: ${esc(r.error||"")}</div>`;
+      return;
+    }
+    
+    if(r.decimo && r.decimo.local && r.decimo.visitante){
+      const liga = r.decimo.liga === "LALIGA" ? "🇪🇸 La Liga" : "🏴󠁧󠁢󠁥󠁮󠁧󠁿 Premier League";
+      const fecha = r.decimo.fecha ? new Date(r.decimo.fecha).toLocaleString() : "Sin fecha";
+      box.innerHTML = `
+        <div style="padding:12px;background:rgba(124,156,255,.1);border:2px solid #7c9cff;border-radius:10px">
+          <div class="small" style="font-weight:800;color:#7c9cff;margin-bottom:8px">${liga}</div>
+          <div style="font-weight:700">${esc(r.decimo.local)} vs ${esc(r.decimo.visitante)}</div>
+          <div class="small" style="margin-top:4px">${fecha}</div>
+        </div>
+      `;
+    } else {
+      box.innerHTML = `<div class="small" style="opacity:.7">No hay décimo partido configurado para esta jornada.</div>`;
+    }
+  }).withFailureHandler(err => {
+    console.error("❌ Error loading décimo:", err);
+    box.innerHTML = `<div class="small bad">Error al cargar: ${esc(err?.message||"")}</div>`;
+  }).api_getDecimoPartido(SESSION.jornada);
+}
+
+function loadEquiposDecimo(){
+  const liga = document.getElementById("decimoLiga").value;
+  const selectLocal = document.getElementById("decimoLocal");
+  const selectVisit = document.getElementById("decimoVisitante");
+  
+  if(!liga){
+    selectLocal.innerHTML = `<option value="">Primero selecciona una liga</option>`;
+    selectVisit.innerHTML = `<option value="">Primero selecciona una liga</option>`;
+    return;
+  }
+  
+  selectLocal.innerHTML = `<option value="">Cargando equipos...</option>`;
+  selectVisit.innerHTML = `<option value="">Cargando equipos...</option>`;
+  
+  google.script.run.withSuccessHandler(r=>{
+    if(!r.ok){
+      selectLocal.innerHTML = `<option value="">Error al cargar equipos</option>`;
+      selectVisit.innerHTML = `<option value="">Error al cargar equipos</option>`;
+      return;
+    }
+    
+    let html = `<option value="">Seleccionar equipo...</option>`;
+    r.equipos.forEach(eq => {
+      html += `<option value="${esc(eq.nombre)}">${esc(eq.nombre)}</option>`;
+    });
+    
+    selectLocal.innerHTML = html;
+    selectVisit.innerHTML = html;
+  }).withFailureHandler(err => {
+    console.error("❌ Error loading equipos:", err);
+    selectLocal.innerHTML = `<option value="">Error al cargar</option>`;
+    selectVisit.innerHTML = `<option value="">Error al cargar</option>`;
+  }).api_getEquiposPorLiga(liga);
+}
+
+function guardarDecimoPartido(){
+  const liga = document.getElementById("decimoLiga").value;
+  const local = document.getElementById("decimoLocal").value;
+  const visitante = document.getElementById("decimoVisitante").value;
+  const fechaInput = document.getElementById("decimoFecha").value;
+  const msgBox = document.getElementById("decimoMsg");
+  
+  if(!liga){
+    msgBox.innerHTML = `<div class="small bad">⚠️ Selecciona una liga</div>`;
+    return;
+  }
+  
+  if(!local || !visitante){
+    msgBox.innerHTML = `<div class="small bad">⚠️ Selecciona ambos equipos</div>`;
+    return;
+  }
+  
+  if(local === visitante){
+    msgBox.innerHTML = `<div class="small bad">⚠️ Los equipos deben ser diferentes</div>`;
+    return;
+  }
+  
+  msgBox.innerHTML = `<div class="small">Guardando...</div>`;
+  
+  let fecha = "";
+  if(fechaInput){
+    fecha = new Date(fechaInput).toISOString();
+  }
+  
+  const payload = {
+    liga,
+    local,
+    visitante,
+    fecha,
+    jornada: SESSION.jornada
+  };
+  
+  google.script.run.withSuccessHandler(r=>{
+    if(r.ok){
+      msgBox.innerHTML = `<div class="small ok">✅ ${esc(r.message||"Guardado exitosamente")}</div>`;
+      loadDecimoActual();
+      // Clear form
+      document.getElementById("decimoLiga").value = "";
+      document.getElementById("decimoLocal").innerHTML = `<option value="">Primero selecciona una liga</option>`;
+      document.getElementById("decimoVisitante").innerHTML = `<option value="">Primero selecciona una liga</option>`;
+      document.getElementById("decimoFecha").value = "";
+    } else {
+      msgBox.innerHTML = `<div class="small bad">⛔ ${esc(r.error||"Error al guardar")}</div>`;
+    }
+  }).withFailureHandler(err => {
+    console.error("❌ Error saving décimo:", err);
+    msgBox.innerHTML = `<div class="small bad">⛔ Error: ${esc(err?.message||"intenta de nuevo")}</div>`;
+  }).api_guardarDecimoPartido(payload);
+}
+
+function quitarDecimoPartido(){
+  const msgBox = document.getElementById("decimoMsg");
+  
+  if(!confirm("¿Estás seguro de eliminar el décimo partido de esta jornada?")){
+    return;
+  }
+  
+  msgBox.innerHTML = `<div class="small">Eliminando...</div>`;
+  
+  google.script.run.withSuccessHandler(r=>{
+    if(r.ok){
+      msgBox.innerHTML = `<div class="small ok">✅ ${esc(r.message||"Eliminado exitosamente")}</div>`;
+      loadDecimoActual();
+    } else {
+      msgBox.innerHTML = `<div class="small bad">⛔ ${esc(r.error||"Error al eliminar")}</div>`;
+    }
+  }).withFailureHandler(err => {
+    console.error("❌ Error removing décimo:", err);
+    msgBox.innerHTML = `<div class="small bad">⛔ Error: ${esc(err?.message||"intenta de nuevo")}</div>`;
+  }).api_quitarDecimoPartido(SESSION.jornada);
+}
 
 /* ---------- AUTO ---------- */
 window.onload = bootstrap;
