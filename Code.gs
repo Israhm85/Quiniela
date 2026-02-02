@@ -2671,32 +2671,8 @@ function uiCapturarMarcadorDecimoPartido() {
   ui.alert(`✅ Marcador capturado: ${marcador}\nResultado: ${calcResFromMarcador_(marcador) || "?"}\nPuntos recalculados.`);
 }
 
-function getDecimoPartidoPorJornada_(jornada) {
-  const ss = SpreadsheetApp.getActive();
-  const sh = ss.getSheetByName(SHEETS.DECIMO_PARTIDO);
-  
-  if (!sh) return null;
-  
-  const lr = sh.getLastRow();
-  if (lr < 2) return null;
-  
-  const data = sh.getRange(2, 1, lr - 1, 7).getValues();
-  
-  for (const r of data) {
-    if (Number(r[0]) === Number(jornada)) {
-      return {
-        liga: String(r[1] || ""),
-        local: String(r[2] || ""),
-        visitante: String(r[3] || ""),
-        fecha: parseDateSafe_(r[4]),
-        logoLocal: String(r[5] || ""),
-        logoVisit: String(r[6] || ""),
-      };
-    }
-  }
-  
-  return null;
-}
+// Nota: getDecimoPartidoPorJornada_() se define más abajo (línea ~3141) 
+// con funcionalidad mejorada que incluye marcador y resultado
 
 /***************
  * ACTUALIZAR HOJA DE IMPRESIÓN
@@ -2873,18 +2849,10 @@ function generarPDFJornadaInterno_(jornada) {
     throw new Error(`No hay partidos para la jornada ${jornada}.`);
   }
   
-  // 2. Obtener décimo partido si existe
-  const decimoPartido = getDecimoPartidoPorJornada_(jornada);
-  if (decimoPartido && decimoPartido.local && decimoPartido.visitante) {
-    partidos.push({
-      local: decimoPartido.local,
-      visitante: decimoPartido.visitante,
-      marcador: decimoPartido.marcador || "",
-      resultado: decimoPartido.resultado || ""
-    });
-  }
+  // Nota: Los 10 partidos ya están en PARTIDOS (9 Liga MX + 1 décimo partido)
+  // No necesitamos agregar el décimo partido por separado
   
-  // 3. Obtener jugadores activos
+  // 2. Obtener jugadores activos
   const shJug = ss.getSheetByName(SHEETS.JUGADORES);
   const lrJ = shJug.getLastRow();
   const jugadoresMap = new Map();
@@ -2903,7 +2871,7 @@ function generarPDFJornadaInterno_(jornada) {
     }
   }
   
-  // 4. Obtener pronósticos de la jornada
+  // 3. Obtener pronósticos de la jornada
   const shPro = ss.getSheetByName(SHEETS.PRONOSTICOS);
   const lrPro = shPro.getLastRow();
   
@@ -2951,12 +2919,12 @@ function generarPDFJornadaInterno_(jornada) {
     }
   }
   
-  // 5. Crear documento de Google Docs
+  // 4. Crear documento de Google Docs
   const docName = `Quiniela - Jornada ${jornada} - ${new Date().toLocaleDateString()}`;
   const doc = DocumentApp.create(docName);
   const body = doc.getBody();
   
-  // 5.1 Configurar página para landscape y márgenes ULTRA mínimos (para UNA SOLA página)
+  // 4.1 Configurar página para landscape y márgenes mínimos (para UNA SOLA página)
   body.setPageWidth(792);  // 11 pulgadas en puntos (landscape)
   body.setPageHeight(612); // 8.5 pulgadas en puntos (landscape)
   body.setMarginTop(20);    // 0.28 pulgadas (mínimo posible)
@@ -2969,7 +2937,7 @@ function generarPDFJornadaInterno_(jornada) {
   defaultStyle[DocumentApp.Attribute.FONT_SIZE] = 9;
   body.setAttributes(defaultStyle);
   
-  // 6. Agregar título profesional
+  // 5. Agregar título profesional
   const titulo = body.appendParagraph(`JORNADA ${jornada}`);
   titulo.setBold(true);
   titulo.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
@@ -2977,7 +2945,7 @@ function generarPDFJornadaInterno_(jornada) {
   titulo.setSpacingBefore(0);
   titulo.setFontSize(11);
   
-  // 7. Crear tabla matriz con todos los participantes y sus picks
+  // 6. Crear tabla matriz con todos los participantes y sus picks
   if (participantes.size === 0) {
     body.appendParagraph("No hay pronósticos registrados para esta jornada.").setItalic(true);
   } else {
