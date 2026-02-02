@@ -2391,6 +2391,88 @@ function api_quitarDecimoPartido(payload) {
   }
 }
 
+function api_capturarMarcadorDecimoPartido(payload) {
+  // Check admin permission
+  const token = String(payload?.token || "").trim();
+  const player = findJugadorByToken_(token);
+  if (!player) {
+    return { ok: false, error: "Token inválido. Inicia sesión nuevamente." };
+  }
+  
+  if (!isPlayerAdminByName_(player.nombre)) {
+    return { ok: false, error: "Solo los administradores pueden capturar el resultado del décimo partido." };
+  }
+  
+  const jornada = Number(payload?.jornada) || Number(getConfig_("JornadaActual")) || 1;
+  const marcador = String(payload?.marcador || "").trim();
+  
+  // Validate marcador format
+  if (!marcador || !marcador.includes("-")) {
+    return { ok: false, error: "Formato inválido. Usa formato: 2-1" };
+  }
+  
+  // Validate it's numeric scores
+  const parts = marcador.split("-");
+  if (parts.length !== 2 || isNaN(Number(parts[0])) || isNaN(Number(parts[1]))) {
+    return { ok: false, error: "El marcador debe ser numérico (ejemplo: 2-1)" };
+  }
+  
+  // Get 10th match info
+  const decimoPartido = getDecimoPartidoPorJornada_(jornada);
+  
+  if (!decimoPartido || !decimoPartido.local || !decimoPartido.visitante) {
+    return { ok: false, error: "No hay décimo partido configurado para esta jornada." };
+  }
+  
+  // Add result to PARTIDOS sheet
+  const ss = SpreadsheetApp.getActive();
+  const shPar = ss.getSheetByName(SHEETS.PARTIDOS);
+  
+  // Check if already exists
+  const lr = shPar.getLastRow();
+  let found = false;
+  
+  if (lr >= 2) {
+    const data = shPar.getRange(2, 1, lr - 1, 6).getValues();
+    for (let i = 0; i < data.length; i++) {
+      const jor = Number(data[i][0]);
+      const local = String(data[i][2] || "").trim();
+      const visit = String(data[i][3] || "").trim();
+      
+      if (jor === jornada && 
+          normalizeTeam_(local) === normalizeTeam_(decimoPartido.local) && 
+          normalizeTeam_(visit) === normalizeTeam_(decimoPartido.visitante)) {
+        // Update marcador
+        const res = calcResFromMarcador_(marcador);
+        shPar.getRange(i + 2, 5).setValue(marcador); // MARCADOR
+        shPar.getRange(i + 2, 6).setValue(res || "");  // RES
+        found = true;
+        break;
+      }
+    }
+  }
+  
+  if (!found) {
+    // Add new match to PARTIDOS
+    const res = calcResFromMarcador_(marcador);
+    shPar.appendRow([jornada, decimoPartido.fecha || "", decimoPartido.local, decimoPartido.visitante, marcador, res || ""]);
+  }
+  
+  // Recalculate points
+  calcularPuntosParaJornada_(jornada);
+  actualizarTablaGeneral();
+  
+  const resultado = calcResFromMarcador_(marcador);
+  
+  return {
+    ok: true,
+    jornada,
+    marcador,
+    resultado,
+    message: `Resultado capturado: ${decimoPartido.local} ${marcador} ${decimoPartido.visitante}. Resultado: ${resultado}. Puntos recalculados.`
+  };
+}
+
 function getLigaMxLogoUrl_(teamName) {
   const nameNorm = normalizeTeam_(teamName);
   if (!nameNorm) return "";

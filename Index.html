@@ -515,6 +515,19 @@
     
     <div id="decimoActualBox" style="margin-top:12px"></div>
     
+    <!-- CAPTURAR RESULTADO -->
+    <div id="decimoResultadoBox" style="display:none;margin-top:14px">
+      <h3 style="margin:10px 0">⚽ Capturar Resultado</h3>
+      <div class="small" id="decimoPartidoInfo" style="margin-bottom:10px"></div>
+      
+      <label class="small" style="display:block;margin-top:10px">Marcador final (ejemplo: 2-1):</label>
+      <input type="text" id="decimoMarcador" placeholder="2-1" style="width:100%" pattern="[0-9]+-[0-9]+">
+      
+      <button style="margin-top:14px" onclick="capturarResultadoDecimo()">✅ Capturar Resultado</button>
+      
+      <div id="decimoResultadoMsg" class="small" style="margin-top:8px"></div>
+    </div>
+    
     <div style="margin-top:14px">
       <h3 style="margin:10px 0">Agregar/Modificar Décimo Partido</h3>
       
@@ -1336,11 +1349,13 @@ function backToForm(){
 
 function loadDecimoActual(){
   const box = document.getElementById("decimoActualBox");
+  const resultadoBox = document.getElementById("decimoResultadoBox");
   box.innerHTML = `<div class="small">Cargando...</div>`;
   
   google.script.run.withSuccessHandler(r=>{
     if(!r.ok){
       box.innerHTML = `<div class="small bad">Error: ${esc(r.error||"")}</div>`;
+      resultadoBox.style.display = "none";
       return;
     }
     
@@ -1354,12 +1369,22 @@ function loadDecimoActual(){
           <div class="small" style="margin-top:4px">${fecha}</div>
         </div>
       `;
+      
+      // Show result capture section
+      resultadoBox.style.display = "block";
+      document.getElementById("decimoPartidoInfo").innerHTML = `
+        <strong>${esc(r.decimo.local)}</strong> vs <strong>${esc(r.decimo.visitante)}</strong>
+      `;
+      document.getElementById("decimoMarcador").value = "";
+      document.getElementById("decimoResultadoMsg").innerHTML = "";
     } else {
       box.innerHTML = `<div class="small" style="opacity:.7">No hay décimo partido configurado para esta jornada.</div>`;
+      resultadoBox.style.display = "none";
     }
   }).withFailureHandler(err => {
     console.error("❌ Error loading décimo:", err);
     box.innerHTML = `<div class="small bad">Error al cargar: ${esc(err?.message||"")}</div>`;
+    resultadoBox.style.display = "none";
   }).api_getDecimoPartido(SESSION.jornada);
 }
 
@@ -1479,6 +1504,52 @@ function quitarDecimoPartido(){
     console.error("❌ Error removing décimo:", err);
     msgBox.innerHTML = `<div class="small bad">⛔ Error: ${esc(err?.message||"intenta de nuevo")}</div>`;
   }).api_quitarDecimoPartido(payload);
+}
+
+function capturarResultadoDecimo(){
+  const msgBox = document.getElementById("decimoResultadoMsg");
+  const marcador = document.getElementById("decimoMarcador").value.trim();
+  
+  if(!marcador){
+    msgBox.innerHTML = `<div class="small bad">⚠️ Ingresa el marcador</div>`;
+    return;
+  }
+  
+  // Validate format
+  if(!marcador.includes("-")){
+    msgBox.innerHTML = `<div class="small bad">⚠️ Formato inválido. Usa: 2-1</div>`;
+    return;
+  }
+  
+  const parts = marcador.split("-");
+  if(parts.length !== 2 || isNaN(Number(parts[0])) || isNaN(Number(parts[1]))){
+    msgBox.innerHTML = `<div class="small bad">⚠️ El marcador debe ser numérico (ejemplo: 2-1)</div>`;
+    return;
+  }
+  
+  msgBox.innerHTML = `<div class="small">Capturando resultado...</div>`;
+  
+  const payload = {
+    jornada: SESSION.jornada,
+    marcador: marcador,
+    token: SESSION.token
+  };
+  
+  google.script.run.withSuccessHandler(r=>{
+    if(r.ok){
+      msgBox.innerHTML = `<div class="small ok">✅ ${esc(r.message||"Resultado capturado exitosamente")}</div>`;
+      document.getElementById("decimoMarcador").value = "";
+      // Refresh the display
+      setTimeout(() => {
+        loadDecimoActual();
+      }, 2000);
+    } else {
+      msgBox.innerHTML = `<div class="small bad">⛔ ${esc(r.error||"Error al capturar resultado")}</div>`;
+    }
+  }).withFailureHandler(err => {
+    console.error("❌ Error capturing result:", err);
+    msgBox.innerHTML = `<div class="small bad">⛔ Error: ${esc(err?.message||"intenta de nuevo")}</div>`;
+  }).api_capturarMarcadorDecimoPartido(payload);
 }
 
 /* ---------- AUTO ---------- */
