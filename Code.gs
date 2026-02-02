@@ -2245,8 +2245,86 @@ function api_generarPDFJornada(jornadaOpt) {
 }
 
 /***************
- * API: DÉCIMO PARTIDO
+ * API: ADMIN AUTHENTICATION & MANAGEMENT
  ***************/
+
+// Enhanced admin authentication with password
+function api_adminLogin(payload) {
+  const password = String(payload?.password || "").trim();
+  const playerToken = String(payload?.token || "").trim();
+  
+  if (!password) {
+    return { ok: false, error: "Se requiere contraseña de administrador." };
+  }
+  
+  if (!playerToken) {
+    return { ok: false, error: "Se requiere token de jugador." };
+  }
+  
+  // Validate player token
+  const player = findJugadorByToken_(playerToken);
+  if (!player) {
+    return { ok: false, error: "Token de jugador inválido." };
+  }
+  
+  // Validate admin password
+  const adminPassword = String(getConfig_("AdminPassword") || "").trim();
+  if (!adminPassword) {
+    return { ok: false, error: "Contraseña de administrador no configurada. Contacta al desarrollador." };
+  }
+  
+  if (password !== adminPassword) {
+    return { ok: false, error: "Contraseña de administrador incorrecta." };
+  }
+  
+  // Generate admin session token
+  const adminToken = Utilities.getUuid();
+  
+  // Store admin session (in cache for 2 hours)
+  const cache = CacheService.getScriptCache();
+  const sessionData = JSON.stringify({
+    playerToken: playerToken,
+    playerId: player.id,
+    playerName: player.nombre,
+    timestamp: Date.now()
+  });
+  cache.put(adminToken, sessionData, 7200); // 2 hours
+  
+  return {
+    ok: true,
+    adminToken: adminToken,
+    nombre: player.nombre,
+    message: "Sesión de administrador iniciada correctamente."
+  };
+}
+
+// Validate admin session
+function validateAdminSession_(adminToken) {
+  if (!adminToken) return { ok: false, error: "Token de administrador requerido." };
+  
+  const cache = CacheService.getScriptCache();
+  const sessionData = cache.get(adminToken);
+  
+  if (!sessionData) {
+    return { ok: false, error: "Sesión de administrador expirada o inválida. Inicia sesión nuevamente." };
+  }
+  
+  try {
+    const session = JSON.parse(sessionData);
+    return { ok: true, session: session };
+  } catch (e) {
+    return { ok: false, error: "Sesión de administrador corrupta." };
+  }
+}
+
+// Logout admin session
+function api_adminLogout(adminToken) {
+  const cache = CacheService.getScriptCache();
+  cache.remove(adminToken);
+  return { ok: true, message: "Sesión de administrador cerrada." };
+}
+
+// Check if player is admin (legacy - for backward compatibility)
 function api_isPlayerAdmin(token) {
   const player = findJugadorByToken_(token);
   if (!player) return { ok: false, isAdmin: false, error: "Token inválido" };
@@ -2265,6 +2343,197 @@ function isPlayerAdminByName_(playerName) {
   return nameNormalized && adminList.includes(nameNormalized);
 }
 
+/***************
+ * API: JORNADA MANAGEMENT
+ ***************/
+
+function api_cambiarJornada(payload) {
+  const validation = validateAdminSession_(payload?.adminToken);
+  if (!validation.ok) return validation;
+  
+  const nuevaJornada = Number(payload?.jornada);
+  if (!nuevaJornada || nuevaJornada < 1 || nuevaJornada > 50) {
+    return { ok: false, error: "Número de jornada inválido (debe ser entre 1 y 50)." };
+  }
+  
+  const jornadaActual = Number(getConfig_("JornadaActual")) || 1;
+  
+  setConfig_("JornadaActual", nuevaJornada);
+  
+  return {
+    ok: true,
+    jornadaAnterior: jornadaActual,
+    jornadaNueva: nuevaJornada,
+    message: `Jornada cambiada de ${jornadaActual} a ${nuevaJornada}.`
+  };
+}
+
+function api_cerrarJornada(payload) {
+  const validation = validateAdminSession_(payload?.adminToken);
+  if (!validation.ok) return validation;
+  
+  const jornada = Number(payload?.jornada) || Number(getConfig_("JornadaActual")) || 1;
+  
+  setConfig_("JornadaCerrada", "SI");
+  setConfig_("Cierre_Jornada", new Date());
+  
+  return {
+    ok: true,
+    jornada: jornada,
+    message: `Jornada ${jornada} cerrada. Picks bloqueados.`
+  };
+}
+
+function api_abrirJornada(payload) {
+  const validation = validateAdminSession_(payload?.adminToken);
+  if (!validation.ok) return validation;
+  
+  const jornada = Number(payload?.jornada) || Number(getConfig_("JornadaActual")) || 1;
+  
+  setConfig_("JornadaCerrada", "NO");
+  setConfig_("Cierre_Jornada", "");
+  
+  return {
+    ok: true,
+    jornada: jornada,
+    message: `Jornada ${jornada} abierta. Picks permitidos.`
+  };
+}
+
+function api_getInfoJornada(payload) {
+  const validation = validateAdminSession_(payload?.adminToken);
+  if (!validation.ok) return validation;
+  
+  const jornadaActual = Number(getConfig_("JornadaActual")) || 1;
+  const jornadaCerrada = String(getConfig_("JornadaCerrada") || "NO").toUpperCase() === "SI";
+  const cierreJornada = getConfig_("Cierre_Jornada") || null;
+  
+  return {
+    ok: true,
+    jornada: jornadaActual,
+    cerrada: jornadaCerrada,
+    fechaCierre: cierreJornada,
+    message: `Jornada ${jornadaActual} - ${jornadaCerrada ? "Cerrada" : "Abierta"}`
+  };
+}
+
+/***************
+ * API: CAPTURA DE RESULTADOS (Partidos Regulares)
+ ***************/
+
+function api_getPartidosParaResultados(payload) {
+  const validation = validateAdminSession_(payload?.adminToken);
+  if (!validation.ok) return validation;
+  
+  const jornada = Number(payload?.jornada) || Number(getConfig_("JornadaActual")) || 1;
+  
+  const ss = SpreadsheetApp.getActive();
+  const shPar = ss.getSheetByName(SHEETS.PARTIDOS);
+  
+  if (!shPar) {
+    return { ok: false, error: "Hoja PARTIDOS no encontrada." };
+  }
+  
+  const lr = shPar.getLastRow();
+  if (lr < 2) {
+    return { ok: true, jornada, partidos: [] };
+  }
+  
+  const data = shPar.getRange(2, 1, lr - 1, 6).getValues();
+  const partidos = [];
+  
+  for (const row of data) {
+    if (Number(row[0]) === jornada) {
+      partidos.push({
+        local: String(row[2] || ""),
+        visitante: String(row[3] || ""),
+        marcador: String(row[4] || "").trim(),
+        resultado: String(row[5] || "").trim()
+      });
+    }
+  }
+  
+  return {
+    ok: true,
+    jornada,
+    partidos
+  };
+}
+
+function api_capturarResultados(payload) {
+  const validation = validateAdminSession_(payload?.adminToken);
+  if (!validation.ok) return validation;
+  
+  const jornada = Number(payload?.jornada) || Number(getConfig_("JornadaActual")) || 1;
+  const resultados = payload?.resultados || [];
+  
+  if (!Array.isArray(resultados) || resultados.length === 0) {
+    return { ok: false, error: "No se proporcionaron resultados para capturar." };
+  }
+  
+  const ss = SpreadsheetApp.getActive();
+  const shPar = ss.getSheetByName(SHEETS.PARTIDOS);
+  
+  if (!shPar) {
+    return { ok: false, error: "Hoja PARTIDOS no encontrada." };
+  }
+  
+  const lr = shPar.getLastRow();
+  if (lr < 2) {
+    return { ok: false, error: "No hay partidos en la hoja PARTIDOS." };
+  }
+  
+  const data = shPar.getRange(2, 1, lr - 1, 6).getValues();
+  let capturados = 0;
+  let errores = 0;
+  
+  for (const resultado of resultados) {
+    const local = String(resultado.local || "").trim();
+    const visitante = String(resultado.visitante || "").trim();
+    const marcador = String(resultado.marcador || "").trim();
+    
+    if (!local || !visitante || !marcador) continue;
+    
+    // Validate marcador format
+    if (!marcador.includes("-")) {
+      errores++;
+      continue;
+    }
+    
+    // Find and update the match
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i];
+      if (Number(row[0]) === jornada &&
+          normalizeTeam_(String(row[2])) === normalizeTeam_(local) &&
+          normalizeTeam_(String(row[3])) === normalizeTeam_(visitante)) {
+        
+        const res = calcResFromMarcador_(marcador);
+        shPar.getRange(i + 2, 5).setValue(marcador); // MARCADOR column
+        shPar.getRange(i + 2, 6).setValue(res || ""); // RES column
+        capturados++;
+        break;
+      }
+    }
+  }
+  
+  // Recalculate points if any results were captured
+  if (capturados > 0) {
+    calcularPuntosParaJornada_(jornada);
+    actualizarTablaGeneral();
+  }
+  
+  return {
+    ok: true,
+    jornada,
+    capturados,
+    errores,
+    message: `${capturados} resultado(s) capturado(s). Puntos recalculados.`
+  };
+}
+
+/***************
+ * API: DÉCIMO PARTIDO
+ ***************/
 function api_getDecimoPartido(jornadaOpt) {
   const jornada = Number(jornadaOpt) || Number(getConfig_("JornadaActual")) || 1;
   const decimo = getDecimoPartidoPorJornada_(jornada);
@@ -2289,15 +2558,25 @@ function api_getEquiposPorLiga(liga) {
 }
 
 function api_guardarDecimoPartido(payload) {
-  // Check admin permission
+  // Check admin permission - support both old token and new adminToken
+  const adminToken = String(payload?.adminToken || "").trim();
   const token = String(payload?.token || "").trim();
-  const player = findJugadorByToken_(token);
-  if (!player) {
-    return { ok: false, error: "Token inválido. Inicia sesión nuevamente." };
-  }
   
-  if (!isPlayerAdminByName_(player.nombre)) {
-    return { ok: false, error: "Solo los administradores pueden configurar el décimo partido." };
+  // Try new admin session validation first
+  if (adminToken) {
+    const validation = validateAdminSession_(adminToken);
+    if (!validation.ok) return validation;
+  } else if (token) {
+    // Fallback to old token-based validation
+    const player = findJugadorByToken_(token);
+    if (!player) {
+      return { ok: false, error: "Token inválido. Inicia sesión nuevamente." };
+    }
+    if (!isPlayerAdminByName_(player.nombre)) {
+      return { ok: false, error: "Solo los administradores pueden configurar el décimo partido." };
+    }
+  } else {
+    return { ok: false, error: "Se requiere autenticación de administrador." };
   }
   
   const liga = String(payload?.liga || "").toUpperCase().trim();
@@ -2348,15 +2627,25 @@ function api_guardarDecimoPartido(payload) {
 }
 
 function api_quitarDecimoPartido(payload) {
-  // Check admin permission
+  // Check admin permission - support both old token and new adminToken
+  const adminToken = String(payload?.adminToken || "").trim();
   const token = String(payload?.token || "").trim();
-  const player = findJugadorByToken_(token);
-  if (!player) {
-    return { ok: false, error: "Token inválido. Inicia sesión nuevamente." };
-  }
   
-  if (!isPlayerAdminByName_(player.nombre)) {
-    return { ok: false, error: "Solo los administradores pueden eliminar el décimo partido." };
+  // Try new admin session validation first
+  if (adminToken) {
+    const validation = validateAdminSession_(adminToken);
+    if (!validation.ok) return validation;
+  } else if (token) {
+    // Fallback to old token-based validation
+    const player = findJugadorByToken_(token);
+    if (!player) {
+      return { ok: false, error: "Token inválido. Inicia sesión nuevamente." };
+    }
+    if (!isPlayerAdminByName_(player.nombre)) {
+      return { ok: false, error: "Solo los administradores pueden eliminar el décimo partido." };
+    }
+  } else {
+    return { ok: false, error: "Se requiere autenticación de administrador." };
   }
   
   const jornada = Number(payload?.jornada) || Number(getConfig_("JornadaActual")) || 1;
@@ -2392,15 +2681,25 @@ function api_quitarDecimoPartido(payload) {
 }
 
 function api_capturarMarcadorDecimoPartido(payload) {
-  // Check admin permission
+  // Check admin permission - support both old token and new adminToken
+  const adminToken = String(payload?.adminToken || "").trim();
   const token = String(payload?.token || "").trim();
-  const player = findJugadorByToken_(token);
-  if (!player) {
-    return { ok: false, error: "Token inválido. Inicia sesión nuevamente." };
-  }
   
-  if (!isPlayerAdminByName_(player.nombre)) {
-    return { ok: false, error: "Solo los administradores pueden capturar el resultado del décimo partido." };
+  // Try new admin session validation first
+  if (adminToken) {
+    const validation = validateAdminSession_(adminToken);
+    if (!validation.ok) return validation;
+  } else if (token) {
+    // Fallback to old token-based validation
+    const player = findJugadorByToken_(token);
+    if (!player) {
+      return { ok: false, error: "Token inválido. Inicia sesión nuevamente." };
+    }
+    if (!isPlayerAdminByName_(player.nombre)) {
+      return { ok: false, error: "Solo los administradores pueden capturar el resultado del décimo partido." };
+    }
+  } else {
+    return { ok: false, error: "Se requiere autenticación de administrador." };
   }
   
   const jornada = Number(payload?.jornada) || Number(getConfig_("JornadaActual")) || 1;
