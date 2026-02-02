@@ -3064,7 +3064,7 @@ function generarPDFJornadaInterno_(jornada) {
       "Nota: ✓ = Acierto (fondo verde) | ⚠ = No pagado | — = Sin pronóstico"
     );
     nota.setItalic(true);
-    nota.getChild(0).asParagraph().setFontSize(9);
+    nota.setFontSize(9);
   }
   
   // 9. Guardar y cerrar documento
