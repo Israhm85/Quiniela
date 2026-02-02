@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Demo - Web UI para Décimo Partido</title>
+  <style>
+    :root{
+      --bg:#0f1220;
+      --card:#171a2f;
+      --line:#2a2e52;
+      --accent:#7c9cff;
+      --ok:#35d49a;
+      --bad:#ff6b6b;
+      --txt:#e9ecff;
+    }
+    body{
+      margin:0;
+      padding:20px;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:linear-gradient(180deg,#0c0f1d,#12152b);
+      color:var(--txt);
+      line-height:1.6;
+    }
+    .container{
+      max-width:600px;
+      margin:0 auto;
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:16px;
+      margin-bottom:14px;
+    }
+    .card.highlight{
+      border:2px solid var(--accent);
+      background:rgba(124,156,255,.05);
+    }
+    h1{
+      margin:0 0 20px 0;
+      font-size:28px;
+    }
+    h2{
+      margin:20px 0 10px 0;
+      font-size:22px;
+    }
+    h3{
+      margin:15px 0 8px 0;
+      font-size:18px;
+    }
+    .small{
+      opacity:.85;
+      font-size:14px;
+    }
+    input,select,button{
+      width:100%;
+      padding:12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#0c0f1d;
+      color:var(--txt);
+      font-size:16px;
+      box-sizing:border-box;
+      margin-top:8px;
+    }
+    button{
+      background:linear-gradient(180deg,#6f8cff,#5a74ff);
+      border:none;
+      font-weight:800;
+      cursor:pointer;
+    }
+    button.secondary{
+      background:#0c0f1d;
+      border:1px solid var(--line);
+      font-weight:700;
+    }
+    .feature{
+      padding:12px;
+      background:rgba(53,212,154,.1);
+      border:1px solid var(--ok);
+      border-radius:10px;
+      margin:10px 0;
+    }
+    .feature strong{
+      color:var(--ok);
+    }
+    .decimo-preview{
+      padding:12px;
+      background:rgba(124,156,255,.1);
+      border:2px solid #7c9cff;
+      border-radius:10px;
+      margin:10px 0;
+    }
+    .badge{
+      background:#7c9cff;
+      color:#fff;
+      padding:4px 8px;
+      border-radius:6px;
+      font-size:12px;
+      font-weight:900;
+      display:inline-block;
+      margin-bottom:6px;
+    }
+    code{
+      background:#0c0f1d;
+      padding:2px 6px;
+      border-radius:4px;
+      font-size:13px;
+      color:var(--accent);
+    }
+    ul{
+      margin:8px 0;
+      padding-left:24px;
+    }
+    li{
+      margin:6px 0;
+    }
+    .step{
+      background:rgba(255,255,255,.03);
+      padding:10px 14px;
+      border-left:3px solid var(--accent);
+      margin:10px 0;
+      border-radius:0 8px 8px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🌍 Nueva Funcionalidad: Web UI para Décimo Partido</h1>
+    
+    <div class="card">
+      <h2>📱 Problema Resuelto</h2>
+      <p class="small">
+        <strong>Antes:</strong> Para configurar el décimo partido, el administrador debía:
+      </p>
+      <ul class="small">
+        <li>Abrir Google Sheets en computadora</li>
+        <li>Ir al menú Quiniela</li>
+        <li>Usar múltiples diálogos (4 pasos)</li>
+        <li>❌ Incómodo desde móvil</li>
+      </ul>
+      <p class="small" style="margin-top:12px">
+        <strong>Ahora:</strong> El administrador puede configurar el décimo partido directamente desde el celular:
+      </p>
+      <ul class="small">
+        <li>✅ Interfaz web responsive</li>
+        <li>✅ Dropdowns visuales para equipos</li>
+        <li>✅ Sin necesidad de abrir Sheets</li>
+        <li>✅ Todo en una sola pantalla</li>
+      </ul>
+    </div>
+
+    <div class="card highlight">
+      <h2>🎨 Nueva Interfaz (Demo)</h2>
+      <div class="small" style="margin-bottom:12px">Así se ve la nueva pantalla de gestión:</div>
+      
+      <h3>🌍 Décimo Partido Opcional</h3>
+      <div class="small">Configura un partido extra de La Liga o Premier League para esta jornada.</div>
+      
+      <div class="decimo-preview" style="margin-top:12px">
+        <div class="badge">🇪🇸 LA LIGA</div>
+        <div style="font-weight:700">Real Madrid vs Barcelona</div>
+        <div class="small" style="margin-top:4px">Jan 26, 2026 3:00 PM</div>
+      </div>
+      
+      <h3 style="margin-top:16px">Agregar/Modificar Décimo Partido</h3>
+      
+      <label class="small" style="display:block;margin-top:10px">Liga:</label>
+      <select disabled>
+        <option>🇪🇸 La Liga Española</option>
+      </select>
+      
+      <label class="small" style="display:block;margin-top:10px">Equipo Local:</label>
+      <select disabled>
+        <option>Real Madrid</option>
+      </select>
+      
+      <label class="small" style="display:block;margin-top:10px">Equipo Visitante:</label>
+      <select disabled>
+        <option>Barcelona</option>
+      </select>
+      
+      <label class="small" style="display:block;margin-top:10px">Fecha (opcional):</label>
+      <input type="datetime-local" disabled value="2026-01-26T15:00">
+      
+      <button style="margin-top:14px">💾 Guardar Décimo Partido</button>
+      <button class="secondary" style="margin-top:10px">🗑️ Eliminar Décimo Partido</button>
+    </div>
+
+    <div class="card">
+      <h2>🔧 Características Técnicas</h2>
+      
+      <div class="feature">
+        <strong>✅ 4 Nuevos API Endpoints:</strong>
+        <ul style="margin-top:8px">
+          <li><code>api_getDecimoPartido(jornada)</code> - Obtener partido actual</li>
+          <li><code>api_getEquiposPorLiga(liga)</code> - Listar 20 equipos</li>
+          <li><code>api_guardarDecimoPartido(payload)</code> - Guardar configuración</li>
+          <li><code>api_quitarDecimoPartido(jornada)</code> - Eliminar partido</li>
+        </ul>
+      </div>
+
+      <div class="feature">
+        <strong>✅ Funciones JavaScript:</strong>
+        <ul style="margin-top:8px">
+          <li><code>openDecimoPartido()</code> - Abrir pantalla</li>
+          <li><code>loadEquiposDecimo()</code> - Cargar equipos por liga</li>
+          <li><code>guardarDecimoPartido()</code> - Guardar con validación</li>
+          <li><code>quitarDecimoPartido()</code> - Eliminar con confirmación</li>
+        </ul>
+      </div>
+
+      <div class="feature">
+        <strong>✅ Validaciones Incluidas:</strong>
+        <ul style="margin-top:8px">
+          <li>Liga debe ser LALIGA o PREMIER</li>
+          <li>Equipos deben ser diferentes</li>
+          <li>Nombres validados contra lista oficial</li>
+          <li>Mensajes de error descriptivos</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🔄 Actualizaciones Automáticas</h2>
+      <p class="small">
+        El sistema YA cuenta con actualizaciones automáticas mediante el trigger <code>onEdit</code>:
+      </p>
+      
+      <div class="step">
+        <strong>Paso 1:</strong> Se edita un marcador en la hoja PARTIDOS
+      </div>
+      
+      <div class="step">
+        <strong>Paso 2:</strong> El trigger <code>onEdit</code> detecta el cambio automáticamente
+      </div>
+      
+      <div class="step">
+        <strong>Paso 3:</strong> Se calcula el resultado (L/E/V) con <code>calcResFromMarcador_()</code>
+      </div>
+      
+      <div class="step">
+        <strong>Paso 4:</strong> Se ejecuta <code>calcularPuntosParaJornada_()</code> para actualizar puntos
+      </div>
+      
+      <div class="step">
+        <strong>Paso 5:</strong> Se ejecuta <code>actualizarTablaGeneral()</code> para actualizar clasificación
+      </div>
+      
+      <div class="step">
+        <strong>Resultado:</strong> ✅ Toast notification confirma: "Actualizado: RES=L, puntos y tabla"
+      </div>
+
+      <p class="small" style="margin-top:14px;padding:10px;background:rgba(53,212,154,.1);border-radius:8px">
+        <strong style="color:var(--ok)">✅ No se requieren cambios adicionales:</strong> Las actualizaciones automáticas ya funcionan para todos los partidos, incluyendo el décimo partido.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>📱 Flujo de Uso Completo</h2>
+      
+      <div class="step">
+        <strong>1.</strong> Admin abre la web app desde su celular
+      </div>
+      
+      <div class="step">
+        <strong>2.</strong> Hace clic en "🌍 Gestionar décimo partido"
+      </div>
+      
+      <div class="step">
+        <strong>3.</strong> Selecciona liga (La Liga o Premier)
+      </div>
+      
+      <div class="step">
+        <strong>4.</strong> Elige equipos de los dropdowns visuales
+      </div>
+      
+      <div class="step">
+        <strong>5.</strong> Opcionalmente establece fecha con picker nativo
+      </div>
+      
+      <div class="step">
+        <strong>6.</strong> Guarda - partido se almacena en DECIMO_PARTIDO
+      </div>
+      
+      <div class="step">
+        <strong>7.</strong> Todos los jugadores ven el partido en sus picks automáticamente
+      </div>
+      
+      <div class="step">
+        <strong>8.</strong> Cuando el partido termina, admin captura marcador
+      </div>
+      
+      <div class="step">
+        <strong>9.</strong> Sistema recalcula puntos y tabla <strong>automáticamente</strong>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🎯 Beneficios</h2>
+      <ul>
+        <li>✅ <strong>Mobile-first:</strong> Optimizado para uso en celular</li>
+        <li>✅ <strong>Sin dependencias:</strong> No requiere abrir Sheets</li>
+        <li>✅ <strong>Visual:</strong> Dropdowns en lugar de escribir nombres</li>
+        <li>✅ <strong>Validado:</strong> Previene errores de entrada</li>
+        <li>✅ <strong>Rápido:</strong> Todo en una sola pantalla</li>
+        <li>✅ <strong>Automático:</strong> Tablas se actualizan solas</li>
+        <li>✅ <strong>40 equipos:</strong> 20 de cada liga con logos oficiales</li>
+      </ul>
+    </div>
+
+    <div class="card" style="background:rgba(124,156,255,.1);border-color:var(--accent)">
+      <h2>✨ Resumen de Cambios</h2>
+      <p><strong>Code.gs:</strong></p>
+      <ul class="small">
+        <li>+133 líneas: 4 nuevas funciones API</li>
+        <li>Validación completa de datos</li>
+        <li>Manejo robusto de errores</li>
+      </ul>
+      <p style="margin-top:12px"><strong>Index.html:</strong></p>
+      <ul class="small">
+        <li>+164 líneas: Nueva UI card y funciones JS</li>
+        <li>Diseño responsive mobile-first</li>
+        <li>Integración con API backend</li>
+      </ul>
+      <p style="margin-top:12px"><strong>Sistema existente:</strong></p>
+      <ul class="small">
+        <li>✅ onEdit trigger ya implementado</li>
+        <li>✅ Actualizaciones automáticas funcionando</li>
+        <li>✅ Compatible con décimo partido</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>🧪 Cómo Probar</h2>
+      <ol>
+        <li>Despliega el código actualizado como web app</li>
+        <li>Accede desde móvil o desktop</li>
+        <li>Regístrate o ingresa con tu token</li>
+        <li>Presiona "🌍 Gestionar décimo partido"</li>
+        <li>Selecciona una liga y equipos</li>
+        <li>Guarda y verifica que aparece en picks</li>
+        <li>Edita un marcador en Sheets y verifica auto-update</li>
+      </ol>
+    </div>
+
+    <div style="margin-top:30px;padding:20px;background:rgba(53,212,154,.15);border-radius:12px;text-align:center">
+      <h2 style="margin-top:0;color:var(--ok)">🎉 Implementación Completa</h2>
+      <p class="small">
+        Ambos requerimientos del issue están resueltos:
+      </p>
+      <p style="margin:12px 0">
+        ✅ <strong>Décimo partido desde celular sin menú</strong><br>
+        ✅ <strong>Tablas se actualizan automáticamente</strong>
+      </p>
+    </div>
+  </div>
+</body>
+</html>
