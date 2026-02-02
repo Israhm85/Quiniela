@@ -2963,7 +2963,7 @@ function generarPDFJornadaInterno_(jornada) {
     // FILA DE ENCABEZADO: Participante + cada partido
     const headerRow = tablaMatriz.appendTableRow();
     
-    // Primera celda: Participante (balanceada)
+    // Primera celda: Participante (más ancho para evitar saltos de línea)
     const cellParticipante = headerRow.appendTableCell("Participante");
     cellParticipante.setBackgroundColor("#4a86e8");
     const parPara = cellParticipante.getChild(0).asParagraph();
@@ -2972,7 +2972,7 @@ function generarPDFJornadaInterno_(jornada) {
     parPara.setSpacingBefore(0);
     parPara.setSpacingAfter(0);
     parPara.setFontSize(9);
-    cellParticipante.setWidth(85);
+    cellParticipante.setWidth(100);  // Aumentado de 85 a 100 pts
     cellParticipante.setPaddingTop(2);
     cellParticipante.setPaddingBottom(2);
     cellParticipante.setPaddingLeft(2);
@@ -3015,6 +3015,7 @@ function generarPDFJornadaInterno_(jornada) {
       // Fondo alternado para facilitar lectura
       const bgColor = idx % 2 === 0 ? "#f3f3f3" : "#ffffff";
       cellNombre.setBackgroundColor(bgColor);
+      cellNombre.setWidth(100);  // Aumentar de 85 a 100 pts para evitar saltos de línea
       const nombrePara = cellNombre.getChild(0).asParagraph();
       nombrePara.setBold(true);
       nombrePara.setSpacingBefore(0);
