@@ -51,6 +51,7 @@ function onOpen() {
     .addItem("🗑️ Quitar décimo partido", "quitarDecimoPartido")
     .addSeparator()
     .addItem("🖨️ Actualizar hoja de impresión", "actualizarHojaImpresion")
+    .addItem("📄 Generar PDF de jornada", "generarPDFJornada")
     .addSeparator()
     .addItem("🗓️ Programar Sync por calendario (hoy/mañana)", "programarSyncPorCalendario")
     .addItem("🧹 Borrar triggers de Sync", "desactivarAutoSyncMarcadores")
@@ -2206,6 +2207,43 @@ function api_getTransparenciaPicks(jornadaOpt) {
   return { ok: true, jornada, partidos, rows: rowsWithTimestamps };
 }
 
+/***************
+ * API: GENERAR PDF DE JORNADA
+ * Permite a los participantes obtener el PDF de una jornada desde la web app
+ * Solo disponible para jornadas cerradas
+ ***************/
+function api_generarPDFJornada(jornadaOpt) {
+  const jornada = Number(jornadaOpt) || Number(getConfig_("JornadaActual")) || 1;
+  
+  if (!jornada || jornada < 1) {
+    return { ok: false, error: "Número de jornada inválido." };
+  }
+  
+  // Verificar si la jornada está cerrada (solo si es la jornada actual)
+  const jornadaActual = Number(getConfig_("JornadaActual")) || 1;
+  if (jornada === jornadaActual && !isJornadaCerrada_()) {
+    return { ok: false, error: "La jornada actual aún no está cerrada. El PDF estará disponible cuando se cierre la jornada." };
+  }
+  
+  try {
+    const pdfUrl = generarPDFJornadaInterno_(jornada);
+    
+    if (pdfUrl) {
+      return { 
+        ok: true, 
+        jornada, 
+        pdfUrl,
+        message: `PDF generado exitosamente para la jornada ${jornada}.`
+      };
+    } else {
+      return { ok: false, error: "No se pudo generar el PDF. Verifica que haya datos para la jornada seleccionada." };
+    }
+  } catch (error) {
+    Logger.log(`Error generando PDF: ${error.toString()}`);
+    return { ok: false, error: `Error al generar PDF: ${error.toString()}` };
+  }
+}
+
 function getLigaMxLogoUrl_(teamName) {
   const nameNorm = normalizeTeam_(teamName);
   if (!nameNorm) return "";
@@ -2633,32 +2671,8 @@ function uiCapturarMarcadorDecimoPartido() {
   ui.alert(`✅ Marcador capturado: ${marcador}\nResultado: ${calcResFromMarcador_(marcador) || "?"}\nPuntos recalculados.`);
 }
 
-function getDecimoPartidoPorJornada_(jornada) {
-  const ss = SpreadsheetApp.getActive();
-  const sh = ss.getSheetByName(SHEETS.DECIMO_PARTIDO);
-  
-  if (!sh) return null;
-  
-  const lr = sh.getLastRow();
-  if (lr < 2) return null;
-  
-  const data = sh.getRange(2, 1, lr - 1, 7).getValues();
-  
-  for (const r of data) {
-    if (Number(r[0]) === Number(jornada)) {
-      return {
-        liga: String(r[1] || ""),
-        local: String(r[2] || ""),
-        visitante: String(r[3] || ""),
-        fecha: parseDateSafe_(r[4]),
-        logoLocal: String(r[5] || ""),
-        logoVisit: String(r[6] || ""),
-      };
-    }
-  }
-  
-  return null;
-}
+// Nota: getDecimoPartidoPorJornada_() se define más abajo (línea ~3141) 
+// con funcionalidad mejorada que incluye marcador y resultado
 
 /***************
  * ACTUALIZAR HOJA DE IMPRESIÓN
@@ -2743,6 +2757,409 @@ function actualizarHojaImpresion() {
   }
   
   SpreadsheetApp.getUi().alert(`✅ Hoja de impresión actualizada\n\n${todosPartidos.filter(p => p.local).length} partidos cargados para la jornada ${jornada}.\n\nSe crearon 8 copias (1 original + 7 copias) del formato.`);
+}
+
+/***************
+ * GENERAR PDF DE JORNADA
+ * Genera un archivo PDF con todos los participantes y sus selecciones
+ * para una jornada completada (marcada como "lista")
+ ***************/
+function generarPDFJornada() {
+  const ui = SpreadsheetApp.getUi();
+  const jornadaActual = Number(getConfig_("JornadaActual")) || 1;
+  
+  // Preguntar por la jornada
+  const respuesta = ui.prompt(
+    "Generar PDF de Jornada",
+    `¿Para qué jornada deseas generar el PDF?\n(Jornada actual: ${jornadaActual})`,
+    ui.ButtonSet.OK_CANCEL
+  );
+  
+  if (respuesta.getSelectedButton() !== ui.Button.OK) {
+    return;
+  }
+  
+  const jornadaInput = respuesta.getResponseText().trim();
+  const jornada = Number(jornadaInput);
+  
+  if (!jornada || jornada < 1) {
+    ui.alert("⚠️ Número de jornada inválido.");
+    return;
+  }
+  
+  // Verificar si la jornada está cerrada (solo si es la jornada actual)
+  if (jornada === jornadaActual && !isJornadaCerrada_()) {
+    const confirmar = ui.alert(
+      "Jornada no cerrada",
+      "La jornada actual aún no está marcada como cerrada. ¿Deseas continuar de todas formas?",
+      ui.ButtonSet.YES_NO
+    );
+    
+    if (confirmar !== ui.Button.YES) {
+      return;
+    }
+  }
+  
+  try {
+    const pdfUrl = generarPDFJornadaInterno_(jornada);
+    
+    if (pdfUrl) {
+      ui.alert(
+        "✅ PDF Generado",
+        `El PDF de la jornada ${jornada} se ha generado exitosamente.\n\n` +
+        `Enlace: ${pdfUrl}\n\n` +
+        `El archivo también está disponible en tu Google Drive.`,
+        ui.ButtonSet.OK
+      );
+    } else {
+      ui.alert("⚠️ No se pudo generar el PDF. Verifica que haya datos para la jornada seleccionada.");
+    }
+  } catch (error) {
+    Logger.log(`Error generando PDF: ${error.toString()}`);
+    ui.alert(`❌ Error al generar PDF:\n\n${error.toString()}`);
+  }
+}
+
+/**
+ * Función interna que genera el PDF
+ * @param {number} jornada - Número de jornada
+ * @returns {string} URL del PDF generado
+ */
+function generarPDFJornadaInterno_(jornada) {
+  const ss = SpreadsheetApp.getActive();
+  
+  // 1. Obtener datos de partidos
+  const shPar = ss.getSheetByName(SHEETS.PARTIDOS);
+  const lrP = shPar.getLastRow();
+  if (lrP < 2) {
+    throw new Error("No hay partidos en el sistema.");
+  }
+  
+  const partidosData = shPar.getRange(2, 1, lrP - 1, 6).getValues();
+  const partidos = partidosData
+    .filter(r => Number(r[0]) === jornada)
+    .map(r => ({
+      local: String(r[2] || "").trim(),
+      visitante: String(r[3] || "").trim(),
+      marcador: String(r[4] || "").trim(),
+      resultado: String(r[5] || "").trim()
+    }));
+  
+  if (!partidos.length) {
+    throw new Error(`No hay partidos para la jornada ${jornada}.`);
+  }
+  
+  // Nota: Los 10 partidos ya están en PARTIDOS (9 Liga MX + 1 décimo partido)
+  // No necesitamos agregar el décimo partido por separado
+  
+  // 2. Obtener jugadores activos
+  const shJug = ss.getSheetByName(SHEETS.JUGADORES);
+  const lrJ = shJug.getLastRow();
+  const jugadoresMap = new Map();
+  
+  if (lrJ >= 2) {
+    const jugRows = shJug.getRange(2, 1, lrJ - 1, 6).getValues();
+    for (const j of jugRows) {
+      const id = Number(j[0]);
+      const nombre = String(j[1] || "");
+      const activo = String(j[3] || "").toUpperCase();
+      const pagado = String(j[4] || "").toUpperCase();
+      
+      if (activo === "SI") {
+        jugadoresMap.set(id, { nombre, pagado: pagado === "SI" });
+      }
+    }
+  }
+  
+  // 3. Obtener pronósticos de la jornada
+  const shPro = ss.getSheetByName(SHEETS.PRONOSTICOS);
+  const lrPro = shPro.getLastRow();
+  
+  const participantes = new Map(); // key: id|entry -> data
+  
+  if (lrPro >= 2) {
+    const proData = shPro.getRange(2, 1, lrPro - 1, 10).getValues();
+    
+    for (const r of proData) {
+      const jor = Number(r[0]);
+      if (jor !== jornada) continue;
+      
+      const id = Number(r[1]);
+      const nombre = String(r[2] || "");
+      const entry = Number(r[3]) || 1;
+      const local = String(r[4] || "").trim();
+      const visitante = String(r[5] || "").trim();
+      const pick = String(r[6] || "").trim();
+      const pickMarcador = String(r[7] || "").trim();
+      const puntos = Number(r[8]) || 0;
+      
+      if (!id || !local || !visitante) continue;
+      
+      const key = `${id}|${entry}`;
+      
+      if (!participantes.has(key)) {
+        participantes.set(key, {
+          id,
+          nombre,
+          entry,
+          picks: [],
+          puntosTotal: 0
+        });
+      }
+      
+      const participante = participantes.get(key);
+      participante.picks.push({
+        local,
+        visitante,
+        pick,
+        pickMarcador,
+        puntos
+      });
+      participante.puntosTotal += puntos;
+    }
+  }
+  
+  // 4. Crear documento de Google Docs
+  const docName = `Quiniela - Jornada ${jornada} - ${new Date().toLocaleDateString()}`;
+  const doc = DocumentApp.create(docName);
+  const body = doc.getBody();
+  
+  // 4.1 Configurar página para landscape y márgenes mínimos (para UNA SOLA página)
+  body.setPageWidth(792);  // 11 pulgadas en puntos (landscape)
+  body.setPageHeight(612); // 8.5 pulgadas en puntos (landscape)
+  body.setMarginTop(20);    // 0.28 pulgadas (mínimo posible)
+  body.setMarginBottom(20);
+  body.setMarginLeft(20);
+  body.setMarginRight(20);
+  
+  // Establecer fuente balanceada para todo el documento
+  const defaultStyle = {};
+  defaultStyle[DocumentApp.Attribute.FONT_SIZE] = 9;
+  body.setAttributes(defaultStyle);
+  
+  // 5. Agregar título profesional
+  const titulo = body.appendParagraph(`JORNADA ${jornada}`);
+  titulo.setBold(true);
+  titulo.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+  titulo.setSpacingAfter(2);
+  titulo.setSpacingBefore(0);
+  titulo.setFontSize(11);
+  
+  // 6. Crear tabla matriz con todos los participantes y sus picks
+  if (participantes.size === 0) {
+    body.appendParagraph("No hay pronósticos registrados para esta jornada.").setItalic(true);
+  } else {
+    // Ordenar participantes por puntos (mayor a menor)
+    const participantesOrdenados = Array.from(participantes.values())
+      .sort((a, b) => {
+        if (b.puntosTotal !== a.puntosTotal) return b.puntosTotal - a.puntosTotal;
+        if (a.id !== b.id) return a.id - b.id;
+        return a.entry - b.entry;
+      });
+    
+    // Crear tabla matriz
+    const tablaMatriz = body.appendTable();
+    
+    // FILA DE ENCABEZADO: Participante + cada partido
+    const headerRow = tablaMatriz.appendTableRow();
+    
+    // Primera celda: Participante (más ancho para evitar saltos de línea)
+    const cellParticipante = headerRow.appendTableCell("Participante");
+    cellParticipante.setBackgroundColor("#4a86e8");
+    const parPara = cellParticipante.getChild(0).asParagraph();
+    parPara.setBold(true);
+    parPara.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+    parPara.setSpacingBefore(0);
+    parPara.setSpacingAfter(0);
+    parPara.setFontSize(9);
+    cellParticipante.setWidth(100);  // Aumentado de 85 a 100 pts
+    cellParticipante.setPaddingTop(2);
+    cellParticipante.setPaddingBottom(2);
+    cellParticipante.setPaddingLeft(2);
+    cellParticipante.setPaddingRight(2);
+    
+    // Celdas de encabezado para cada partido (balanceadas)
+    partidos.forEach(p => {
+      const matchText = `${p.local}-${p.visitante}`;
+      const cellMatch = headerRow.appendTableCell(matchText);
+      cellMatch.setBackgroundColor("#4a86e8");
+      const matchPara = cellMatch.getChild(0).asParagraph();
+      matchPara.setBold(true);
+      matchPara.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+      matchPara.setSpacingBefore(0);
+      matchPara.setSpacingAfter(0);
+      matchPara.setFontSize(8);
+      cellMatch.setWidth(45);
+      cellMatch.setPaddingTop(2);
+      cellMatch.setPaddingBottom(2);
+      cellMatch.setPaddingLeft(2);
+      cellMatch.setPaddingRight(2);
+    });
+    
+    // FILAS DE PARTICIPANTES
+    participantesOrdenados.forEach((part, idx) => {
+      const filaParticipante = tablaMatriz.appendTableRow();
+      
+      // Primera celda: Nombre del participante con puntos totales (balanceado)
+      const nombreCompleto = part.entry > 1 
+        ? `${part.nombre} (${part.entry})` 
+        : part.nombre;
+      
+      const jugadorInfo = jugadoresMap.get(part.id);
+      const estadoPago = jugadorInfo?.pagado ? " ✓" : " ⚠";
+      
+      const cellNombre = filaParticipante.appendTableCell(
+        `${nombreCompleto}${estadoPago} (${part.puntosTotal})`
+      );
+      
+      // Fondo alternado para facilitar lectura
+      const bgColor = idx % 2 === 0 ? "#f3f3f3" : "#ffffff";
+      cellNombre.setBackgroundColor(bgColor);
+      cellNombre.setWidth(100);  // Aumentar de 85 a 100 pts para evitar saltos de línea
+      const nombrePara = cellNombre.getChild(0).asParagraph();
+      nombrePara.setBold(true);
+      nombrePara.setSpacingBefore(0);
+      nombrePara.setSpacingAfter(0);
+      nombrePara.setFontSize(9);
+      cellNombre.setPaddingTop(2);
+      cellNombre.setPaddingBottom(2);
+      cellNombre.setPaddingLeft(2);
+      cellNombre.setPaddingRight(2);
+      
+      // Crear mapa de picks del participante para búsqueda rápida
+      const picksMap = new Map();
+      part.picks.forEach(pick => {
+        const key = `${pick.local}|||${pick.visitante}`;
+        picksMap.set(key, pick);
+      });
+      
+      // Celdas para cada partido (balanceadas)
+      partidos.forEach(partido => {
+        const key = `${partido.local}|||${partido.visitante}`;
+        const pick = picksMap.get(key);
+        
+        if (pick && pick.pick) {
+          // Determinar si acertó comparando con el resultado del partido
+          const acerto = pick.puntos > 0;
+          const pickText = acerto ? `✓ ${pick.pick}` : pick.pick;
+          
+          const cellPick = filaParticipante.appendTableCell(pickText);
+          const pickPara = cellPick.getChild(0).asParagraph();
+          pickPara.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+          pickPara.setBold(true);
+          pickPara.setSpacingBefore(0);
+          pickPara.setSpacingAfter(0);
+          pickPara.setFontSize(9);
+          cellPick.setPaddingTop(2);
+          cellPick.setPaddingBottom(2);
+          cellPick.setPaddingLeft(2);
+          cellPick.setPaddingRight(2);
+          
+          // Color de fondo: verde si acertó, blanco/gris si no
+          if (acerto) {
+            cellPick.setBackgroundColor("#d9ead3");
+          } else {
+            cellPick.setBackgroundColor(bgColor);
+          }
+        } else {
+          // Sin pick
+          const cellEmpty = filaParticipante.appendTableCell("—");
+          const emptyPara = cellEmpty.getChild(0).asParagraph();
+          emptyPara.setAlignment(DocumentApp.HorizontalAlignment.CENTER);
+          emptyPara.setSpacingBefore(0);
+          emptyPara.setSpacingAfter(0);
+          emptyPara.setFontSize(9);
+          cellEmpty.setPaddingTop(2);
+          cellEmpty.setPaddingBottom(2);
+          cellEmpty.setPaddingLeft(2);
+          cellEmpty.setPaddingRight(2);
+          cellEmpty.setBackgroundColor(bgColor);
+        }
+      });
+    });
+    
+    // Agregar nota explicativa
+    const nota = body.appendParagraph(
+      "✓=Acierto (fondo verde) | ⚠=No pagado | —=Sin pronóstico"
+    );
+    nota.setItalic(true);
+    nota.setFontSize(7);
+    nota.setSpacingBefore(2);
+    nota.setSpacingAfter(0);
+  }
+  
+  // 9. Guardar y cerrar documento
+  doc.saveAndClose();
+  
+  // 10. Convertir a PDF y mover a la carpeta raíz de Drive
+  const docFile = DriveApp.getFileById(doc.getId());
+  const pdfBlob = docFile.getAs('application/pdf');
+  const pdfFile = DriveApp.createFile(pdfBlob);
+  pdfFile.setName(`${docName}.pdf`);
+  
+  // Eliminar el documento temporal de Google Docs
+  docFile.setTrashed(true);
+  
+  return pdfFile.getUrl();
+}
+
+/**
+ * Helper: Obtener información del décimo partido por jornada
+ * (Incluye marcador y resultado si está disponible en PARTIDOS)
+ */
+function getDecimoPartidoPorJornada_(jornada) {
+  const ss = SpreadsheetApp.getActive();
+  const shDecimo = ss.getSheetByName(SHEETS.DECIMO_PARTIDO);
+  
+  if (!shDecimo) return null;
+  
+  const lr = shDecimo.getLastRow();
+  if (lr < 2) return null;
+  
+  const data = shDecimo.getRange(2, 1, lr - 1, 7).getValues();
+  
+  for (const r of data) {
+    const jor = Number(r[0]);
+    if (jor !== jornada) continue;
+    
+    const local = String(r[2] || "").trim();
+    const visitante = String(r[3] || "").trim();
+    
+    if (!local || !visitante) continue;
+    
+    // Buscar marcador en PARTIDOS
+    const shPar = ss.getSheetByName(SHEETS.PARTIDOS);
+    const lrP = shPar.getLastRow();
+    let marcador = "";
+    let resultado = "";
+    
+    if (lrP >= 2) {
+      const partidosData = shPar.getRange(2, 1, lrP - 1, 6).getValues();
+      for (const p of partidosData) {
+        if (Number(p[0]) === jornada && 
+            normalizeTeam_(String(p[2])) === normalizeTeam_(local) &&
+            normalizeTeam_(String(p[3])) === normalizeTeam_(visitante)) {
+          marcador = String(p[4] || "").trim();
+          resultado = String(p[5] || "").trim();
+          break;
+        }
+      }
+    }
+    
+    return {
+      jornada: jor,
+      liga: String(r[1] || "").trim(),
+      local,
+      visitante,
+      fecha: r[4],
+      logoLocal: String(r[5] || "").trim(),
+      logoVisitante: String(r[6] || "").trim(),
+      marcador,
+      resultado
+    };
+  }
+  
+  return null;
 }
 
 
